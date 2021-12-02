@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+
+
+import os
+import sys
+import logging
+import argparse
+import numpy as np
+import pandas as pd
+import logging.handlers
+
+from .parse import parse_plate_design, parse_excel
+from .colorlog import ColorFormatter
+
+
+logger = logging.getLogger('evol')
+
+
+def set_logging(v):
+    logger.propagate = True
+    logger.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler()
+    if v == 0:
+        ch.setLevel(logging.INFO)
+    elif v >= 1:
+        ch.setLevel(logging.DEBUG)
+    formatter = ColorFormatter('%(asctime)s - %(name)s - $COLOR%(message)s$RESET','%H:%M:%S')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+
+def get_options():
+    description = 'Scan a directory to extract a plate reader experiment'
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('folder',
+                        help='Input folder: must contain excel files in '
+                             'the format PLATE_DATE_PASSAGE.xlsx. The '
+                             'folder name should have the format '
+                             'EXP_DATE_Evol_XXXX')
+    
+    parser.add_argument('design',
+                        help='Experiment/plate design: '
+                             'excel file with multiple sheets in the format '
+                             'EXP_PLATE_DATE')
+    
+    parser.add_argument('output',
+                        help='Output file (tsv format)')
+    
+    parser.add_argument('--mic',
+                        action='store_true',
+                        default=False,
+                        help='Folder contains MICs (default: evol. exp.)')
+
+    parser.add_argument('-v', action='count',
+                        default=0,
+                        help='Increase verbosity level')
+    
+    return parser.parse_args()
+
+
+def main():
+    options = get_options()
+    folder = options.folder
+    design = options.design
+
+    set_logging(options.v)
+
+    logger.info(f'reading plate design from {design}')
+    
+    d = {}
+    for name, exp, plate, df in parse_plate_design(design):
+        d[exp] = d.get(exp, {})
+        d[exp][plate] = df
+
+    # check if the folder is in the right format
+    a_folder = os.path.basename(os.path.normpath(folder))
+    if len(a_folder.split('_')) < 4:
+        logger.error(f'folder name ({a_folder}) does not respect naming convention '
+                      'EXP_DATE_Evol_XXXX')
+        sys.exit(1)
+
+    exp, edate, etype, _ = a_folder.split('_')
+
+    if not options.mic and etype.lower() != 'evol':
+        logger.error('expecting "evol" in the folder name as experiment type'
+                     f', found {etype}')
+        sys.exit(1)
+    elif options.mic and etype.lower() != 'mics':
+        logger.error('expecting "mics" in the folder name as experiment type'
+                     f', found {etype}')
+        sys.exit(1)
+    if exp not in d:
+        logger.error(f'experiment {exp} not in the design table')
+        sys.exit(1)
+
+    df = []
+    for infile in os.listdir(folder):
+        if not infile.endswith('xlsx'):
+            logger.debug(f'skipping {infile} from {folder}')
+            continue
+        if len(infile.split('.')[0].split('_')) < 3:
+            logger.debug(f'skipping {infile} from {folder}')
+            continue
+        
+        plate, date, passage = infile.split('.')[0].split('_')[:3]
+        if not options.mic:
+            # make the passage bit an integer
+            # TODO: cross check with the date
+            n_passage = int(passage[1:])
+        else:
+            # either "start" or TBD
+            n_passage = passage
+
+        m = parse_excel(os.path.join(folder, infile))
+
+        if plate not in d[exp]:
+            logger.error(f'plate {plate} from {exp} not in the design table')
+            sys.exit(1)
+
+        # join with design table
+        m = d[exp][plate].set_index(['row', 'column']).join(m.to_frame(), how='outer')
+        m['plate'] = plate
+        m['passage'] = n_passage
+        df.append(m)
+
+        logger.info(f'parsed {infile}')
+
+    df = pd.concat(df)
+
+    # add metadata
+    df['experiment'] = exp
+    df['type'] = etype.lower()
+
+    df = df.sort_values(['plate', 'passage', 'row', 'column'])
+
+    df.to_csv(options.output, sep='\t')
+
+
+if __name__ == "__main__":
+    main()
