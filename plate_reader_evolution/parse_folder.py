@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import logging.handlers
 
+from .__init__ import __version__
 from .parse import parse_plate_design, parse_excel
 from .colorlog import ColorFormatter
 
@@ -56,7 +57,9 @@ def get_options():
     parser.add_argument('-v', action='count',
                         default=0,
                         help='Increase verbosity level')
-    
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s '+__version__)
+
     return parser.parse_args()
 
 
