@@ -116,7 +116,7 @@ def main():
             # either "start" or TBD
             n_passage = passage
 
-        logger.debug(f'about to parse {infile}')
+        logger.info(f'about to parse {infile}')
 
         m = parse_excel(os.path.join(folder, infile))
 
@@ -130,7 +130,7 @@ def main():
         m['passage'] = n_passage
         df.append(m)
 
-        logger.info(f'parsed {infile}')
+        logger.debug(f'parsed {infile}')
 
     df = pd.concat(df)
 
