@@ -116,6 +116,8 @@ def main():
             # either "start" or TBD
             n_passage = passage
 
+        logger.debug(f'about to parse {infile}')
+
         m = parse_excel(os.path.join(folder, infile))
 
         if plate not in d[exp]:
