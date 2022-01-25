@@ -100,7 +100,7 @@ def main():
 
     df = []
     for infile in os.listdir(folder):
-        if not infile.endswith('xlsx'):
+        if not infile.endswith('xlsx') and not infile.endswith('xls'):
             logger.debug(f'skipping {infile} from {folder}')
             continue
         if len(infile.split('.')[0].split('_')) < 3:
