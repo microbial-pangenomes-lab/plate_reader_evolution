@@ -51,6 +51,7 @@ setup(
             'pre-compute-mic = plate_reader_evolution.compute_mic:main',
             'pre-plot-evol = plate_reader_evolution.plot_evol:main',
             'pre-plot-plate = plate_reader_evolution.plot_plate:main',
+            'pre-rename-readings = plate_reader_evolution.rename_readings:main',
             ]
     },
     install_requires=['numpy',
