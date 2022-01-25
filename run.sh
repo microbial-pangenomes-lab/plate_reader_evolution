@@ -5,7 +5,7 @@ mkdir -p out
 
 indir=$1
 
-for folder in $(find $indir -type d -name 'EXP*Evol*');
+for folder in $(find $indir -maxdepth 1 -type d -name 'EXP*Evol*');
 do
   echo $folder;exp=$(basename $folder | awk -F '_' '{print $1}');
   mkdir -p out/$exp/;
@@ -17,7 +17,7 @@ do
   python3 plot_evol-runner.py out/$exp/$exp"_evol.tsv" out/$exp/evol_plots/;
 done
 
-for folder in $(find $indir -type d -name 'EXP*MIC*');
+for folder in $(find $indir -maxdepth 1 -type d -name 'EXP*MIC*');
 do
   echo $folder;exp=$(basename $folder | awk -F '_' '{print $1}');
   mkdir -p out/$exp/;
