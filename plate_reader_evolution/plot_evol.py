@@ -122,43 +122,47 @@ def main():
 
     # first appearance
     logger.info(f'computing the first appearance of resistance')
-    df = df[df['passage'] > 0].copy()
-    appearance = []
-    for _, x in df.iterrows():
-        if x['od600'] < options.threshold:
-            v = 0
-        else:
-            if x['passage'] == df[df['treatment-id'] == df['treatment-id']]['passage'].max():
-                v = 1
-            elif df[(df['id'] == x['id']) &
-                    (df['treatment'] == x['treatment']) &
-                    (df['strain'] == x['strain']) &
-                    (df['passage'] == x['passage'] + 1)]['od600'].values[0] >= options.threshold:
-                v = 1
-            else:
+    # might fail, deal with errors gracefully
+    try:
+        df = df[df['passage'] > 0].copy()
+        appearance = []
+        for _, x in df.iterrows():
+            if x['od600'] < options.threshold:
                 v = 0
-        appearance.append(v)
-    df['appearance'] = appearance
-    app = df[df['appearance'] > 0].groupby([
-        'treatment-id', 'strain', 'id'])['passage'].min().reset_index()
-    no_app = df[df['appearance'] == 0].groupby([
-        'treatment-id', 'strain', 'id'])['passage'].max().reset_index()
-    no_app = no_app[no_app['passage'] == df['passage'].max()].copy()
-    no_app['passage'] = df['passage'].max() + 1
-    app = pd.concat([app, no_app])
-    app = app.groupby(['treatment-id', 'strain', 'id'])['passage'].min().reset_index()
+            else:
+                if x['passage'] == df[df['treatment-id'] == df['treatment-id']]['passage'].max():
+                    v = 1
+                elif df[(df['id'] == x['id']) &
+                        (df['treatment'] == x['treatment']) &
+                        (df['strain'] == x['strain']) &
+                        (df['passage'] == x['passage'] + 1)]['od600'].values[0] >= options.threshold:
+                    v = 1
+                else:
+                    v = 0
+            appearance.append(v)
+        df['appearance'] = appearance
+        app = df[df['appearance'] > 0].groupby([
+            'treatment-id', 'strain', 'id'])['passage'].min().reset_index()
+        no_app = df[df['appearance'] == 0].groupby([
+            'treatment-id', 'strain', 'id'])['passage'].max().reset_index()
+        no_app = no_app[no_app['passage'] == df['passage'].max()].copy()
+        no_app['passage'] = df['passage'].max() + 1
+        app = pd.concat([app, no_app])
+        app = app.groupby(['treatment-id', 'strain', 'id'])['passage'].min().reset_index()
 
-    df = df.pivot_table(index=['treatment-id', 'strain', 'id'],
-			columns=['passage'], values='appearance')
+        df = df.pivot_table(index=['treatment-id', 'strain', 'id'],
+                            columns=['passage'], values='appearance')
 
-    logger.info(f'plotting first appearance (1)')
-    fname = os.path.join(options.output, f'appearance_1.{options.format}')
-    plot_passages(df, treatments_colors, strains_colors, fname, 'resistance',
-                  cmap='Greys_r', vmax=1.3)
-    
-    logger.info(f'plotting first appearance (2)')
-    fname = os.path.join(options.output, f'appearance_2.{options.format}')
-    plot_appearance(app, strains_colors, fname)
+        logger.info(f'plotting first appearance (1)')
+        fname = os.path.join(options.output, f'appearance_1.{options.format}')
+        plot_passages(df, treatments_colors, strains_colors, fname, 'resistance',
+                      cmap='Greys_r', vmax=1.3)
+        
+        logger.info(f'plotting first appearance (2)')
+        fname = os.path.join(options.output, f'appearance_2.{options.format}')
+        plot_appearance(app, strains_colors, fname)
+    except Exception as e:
+        logger.warning(f'could not compute first appearance of resistance, skipping')
 
 if __name__ == "__main__":
     main()
