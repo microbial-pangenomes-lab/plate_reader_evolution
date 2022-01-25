@@ -163,6 +163,7 @@ def main():
         plot_appearance(app, strains_colors, fname)
     except Exception as e:
         logger.warning(f'could not compute first appearance of resistance, skipping')
+        logger.warning(f'error was {str(e)}')
 
 if __name__ == "__main__":
     main()
