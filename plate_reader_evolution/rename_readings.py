@@ -110,6 +110,10 @@ def main():
             orig = os.path.join(folder, f, i)
             dest = os.path.join(output, outfolder, fname)
             try:
+                os.mkdir(output)
+            except:
+                pass
+            try:
                 os.mkdir(os.path.join(output, outfolder))
             except:
                 pass
