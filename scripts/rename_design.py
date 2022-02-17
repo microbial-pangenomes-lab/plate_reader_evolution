@@ -64,6 +64,7 @@ if __name__ == "__main__":
     
     d = []
     for name, exp, plate, df in parse_plate_design(design):
+        logger.info(f'reading design for {name}, {exp}, {plate}')
         df['experiment'] = exp
         df['plate'] = plate
         df['name'] = name
@@ -84,13 +85,22 @@ if __name__ == "__main__":
 
     j = d.join(r, how='inner')
     j = j.reset_index()
+    d = d.reset_index()
 
     j['new'] = [f'{strain}_{exp}_{plate}_{well}_{passage}_{notes}'
                 for strain, exp, plate, well, passage, notes in
                 j[['strain', 'EVOL_EXP', 'Evol_Plate', 'WELL', 'PASSAGE', 'HML']].values]
 
-    with pd.ExcelWriter(output) as writer:  
-        for name in j['name'].unique(): 
-            t = j[j['name'] == name][['well', 'new', 'treatment', 'concentration']]
+    # also rewrite the original ones
+    names = sorted(d['name'].unique(), key=lambda x: (int(x.split('_')[0].replace('EXP', '')),
+                                                      int(x.split('_')[1].replace('P', ''))))
+    with pd.ExcelWriter(output) as writer:
+        for name in names:
+            if name not in j['name'].unique():
+                logger.debug(f'writing design for {name} (untouched)')
+                t = d[d['name'] == name][['well', 'strain', 'treatment', 'concentration']]
+            else:
+                logger.info(f'writing new design for {name}')
+                t = j[j['name'] == name][['well', 'new', 'treatment', 'concentration']]
             t.columns = ['Plate Well', 'Description', 'Treatment', 'Concentration']
             t.to_excel(writer, sheet_name=name, index=False)
