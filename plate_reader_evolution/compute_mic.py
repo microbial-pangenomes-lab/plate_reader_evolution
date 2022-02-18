@@ -9,6 +9,7 @@ import pandas as pd
 import logging.handlers
 
 from .__init__ import __version__
+from .mic import compute_mic
 from .mic import fit_gompertz, fit_hill
 from .plot import plot_mic, create_figure
 from .colorlog import ColorFormatter
@@ -51,6 +52,19 @@ def get_options():
                         help='Minimum delta(OD600) to trigger curve fitting '
                              '(default: %(default).2f)')
     
+    parser.add_argument('--od-threshold',
+                        type=float,
+                        default=0.2,
+                        help='Minimum normalised OD600 to consider growth '
+                             '(default: %(default).2f)')
+
+    parser.add_argument('--normalise-od',
+                        type=float,
+                        default=0.3,
+                        help='Minimum OD600 to use for normalisation\'s '
+                             'minimum '
+                             '(default: %(default).2f)')
+    
     parser.add_argument('--plot',
                         default=False,
                         action='store_true',
@@ -76,13 +90,13 @@ def get_options():
     return parser.parse_args()
 
 
-def plot(v, params, outdir, fmt, fig):
+def plot(v, params, outdir, fmt, fig, normalise):
     name = '_'.join([str(x) for x in v.name])
     fname = os.path.join(outdir, f'{name}.{fmt}')
     logger.info(f'plotting MIC {name}')
     logger.debug(f'creating file {fname}')
-    p = params.loc[tuple(v.name), ['a', 'b', 'c', 'd', 'mic']]
-    plot_mic(v, p, fname, fig=fig, name=name)
+    p = params.loc[tuple(v.name), ['a', 'b', 'c', 'd', 'mic', 'cmic']]
+    plot_mic(v, p, fname, normalise=normalise, fig=fig, name=name)
 
 
 def main():
@@ -96,20 +110,30 @@ def main():
         df.append(pd.read_csv(filename, sep='\t'))
     df = pd.concat(df)
    
-    groupby = ['experiment', 'plate', 'strain', 'treatment', 'passage']
+    groupby = ['experiment', 'plate', 'strain', 'treatment', 'passage', 'date']
 
     # compute MICs
-    logger.info('computing MICs')
+    logger.info('computing MICs (curve fitting)')
     mic = df.groupby(groupby).apply(fit_gompertz,
                                     estimate=True,
                                     sanity=options.minimum_od,
+                                    normalise=options.minimum_od,
                                     )['mic'].to_frame()
+    # compute MICs (classical "eyeballing" method)
+    logger.info('computing MICs (eyeballing)')
+    cmic = df.groupby(groupby).apply(compute_mic,
+                                     threshold=options.od_threshold,
+                                     normalise=options.minimum_od,
+                                     )
+    cmic.name = 'cmic'
+    cmic = cmic.to_frame()
     # fit hill function (IC50)
     logger.info('computing IC50s')
     params = df.groupby(groupby).apply(fit_hill,
                                        estimate=True,
-                                       sanity=options.minimum_od)
-    params = params.join(mic, how='outer')
+                                       sanity=options.minimum_od,
+                                       normalise=options.minimum_od)
+    params = params.join(mic.join(cmic, how='outer'), how='outer')
     params.to_csv(options.output,
                   sep='\t')
 
@@ -118,6 +142,7 @@ def main():
         
         df.groupby(groupby).apply(plot,
                                   params=params,
+                                  normalise=options.minimum_od,
                                   outdir=options.plots_output,
                                   fmt=options.format,
                                   fig=fig)

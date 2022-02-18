@@ -138,7 +138,7 @@ def plot_plate(df, fname, fig=None, name=''):
     plt.clf()
 
 
-def plot_mic(df, params, fname, fig=None, name=''):
+def plot_mic(df, params, fname, normalise=None, fig=None, name=''):
     if fig is None:
         fig = create_figure()
     else:
@@ -148,7 +148,26 @@ def plot_mic(df, params, fname, fig=None, name=''):
              df['od600'],
              'ko',
              label='data')
-    a, b, c, d, mic = params
+    if normalise is not None:
+        y = df['od600']
+        ymin = y[y <= normalise]
+        if y.max() > 0.5:
+            ymax = np.mean(y[y > 0.5])
+        else:
+            ymax = y.max()
+        if ymin.shape[0] != 0:
+            ymin = np.median(ymin)
+            y1 = (y - ymin) / (y.max() - ymin)
+            y2 = (y - ymin) / (ymax - ymin)
+            plt.plot(df['concentration'],
+                    y1,
+                    'b.',
+                    label='normalised data')
+            plt.plot(df['concentration'],
+                    y2,
+                    'g.',
+                    label='normalised data (cMIC)')
+    a, b, c, d, mic, cmic = params
     if not np.isnan(a):
         x = np.linspace(df[df['concentration'] != 0]['concentration'].min(),
                         df[df['concentration'] != 0]['concentration'].max(),
@@ -169,6 +188,12 @@ def plot_mic(df, params, fname, fig=None, name=''):
                     color='r',
                     ls='dashed',
                     label='MIC')
+
+    if not np.isnan(cmic):
+        plt.axvline(cmic,
+                color='xkcd:dark red',
+                    ls='dashed',
+                    label='cMIC')
 
     plt.legend(loc='best', facecolor='w', prop={'size': 6})
 

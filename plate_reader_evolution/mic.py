@@ -10,25 +10,55 @@ from scipy.optimize import curve_fit
 logger = logging.getLogger('evol.mic')
 
 
-def compute_mic(values, tolerance=0.15):
+def compute_mic(values, threshold=0.3, normalise=None):
     """Compute MIC
 
     Args:
-        values (pandas.DataFrame)
+        values (pandas.Series)
             MIC curve data, must contain `concentration`, `od600`
             and `strain` columns
-        tolerance (float)
-            OD values above the plate minumum plus tolerance
+        threshold (float)
+            OD values above the threshold
             are considered growth
+        normalise (float or None)
+            Whether to normalise the data (i.e. bringing it to a 0-1 range).
+            The provided value is used to compute the minimum values to have
+            a more robust normalization (the mean of od600 below this
+            value is used)
 
     Returns:
-        mic (pandas.DataFrame)
+        mic (float)
+            MIC estimate
     """
-    min_od = values['od600'].min()
-    v = values[(values['od600'] < min_od + tolerance)
-                 ].groupby(['strain'])['concentration'].min()
-    v = v.reindex(values['strain'].unique())
-    v[np.isnan(v)] = values['concentration'].max()
+    y = values['od600']
+    v = None
+    if normalise is not None:
+        # robust normalisation
+        # use an average of all OD values
+        # below a sensible OD threshold
+        ymin = y[y <= normalise]
+        # also remove artifacts from very high
+        # OD values
+        if y.max() > 0.5:
+            ymax = np.mean(y[y > 0.5])
+        else:
+            ymax = y.max()
+        if ymin.shape[0] == 0:
+            v = values['concentration'].max()
+        else:
+            ymin = np.mean(ymin)
+            y = (y - ymin) / (ymax - ymin)
+    if v is None:
+        # tentative MIC value
+        v = values[y < threshold]['concentration']
+        if v.shape[0] == 0:
+            v = values['concentration'].max()
+        else:
+            v = v.min()
+    # check that there are no values above threshold with higher conc.
+    w = values[y >= threshold]['concentration'].max()
+    if w > v:
+        return np.nan
     return v
 
 
@@ -50,7 +80,7 @@ def hill_func(x, a, b, c, d):
     return a+(b-a)/(1+(x/c)**d)
 
 
-def fit_hill(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
+def fit_hill(v, estimate=True, sanity=None, normalise=None, maxfev=999999):
     """Fit the Hill function to a MIC curve
 
     Args:
@@ -65,8 +95,11 @@ def fit_hill(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
             Additionally, if the Spearman correlation between OD and 
             [treatment] is above 0.2 or the maximum OD is above 0.2,
             the curve is also not fitted.
-        normalise (bool)
-            Whether to normalise the data (i.e. bringing it to a 0-1 range)
+        normalise (float or None)
+            Whether to normalise the data (i.e. bringing it to a 0-1 range).
+            The provided value is used to compute the minimum values to have
+            a more robust normalization (the mean of od600 below this
+            value is used)
         maxfev (int)
             Maximum iterations for curve fitting
 
@@ -78,15 +111,27 @@ def fit_hill(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
              'SDa', 'SDb',
              'SDc', 'SDd']
     v = v[v['concentration'] != 0]
+    x = v['concentration'].values
+    y = v['od600'].values
+    if normalise is not None:
+        # robust normalisation
+        # use an average of all OD values
+        # below a sensible OD threshold
+        ymin = y[y <= normalise]
+        if ymin.shape[0] == 0:
+            c = v['concentration'].max()
+            return pd.Series([np.nan, np.nan, c, np.nan,
+                              np.nan, np.nan, np.nan, np.nan],
+                             index=index)
+        ymin = np.mean(ymin)
+        y = (y - ymin) / (y.max() - ymin)
     if estimate:
-        p0 = [v['od600'].min(),
-              v['od600'].max(),
-              v['concentration'].mean(),
+        p0 = [y.min(),
+              y.max(),
+              x.mean(),
               1.0]
     else:
         p0 = None
-    x = v['concentration'].values
-    y = v['od600'].values
     if sanity is not None:
         discard = False
         if abs(y.max() - y.min()) <= sanity:
@@ -103,8 +148,6 @@ def fit_hill(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
             return pd.Series([np.nan, np.nan, c, np.nan,
                               np.nan, np.nan, np.nan, np.nan],
                              index=index)
-    if normalise:
-        y = y / np.linalg.norm(y)
     try:
         params = curve_fit(hill_func,
                            x, y,
@@ -146,7 +189,7 @@ def mod_gompertz(x, A, B, C, M):
     return A + C * np.exp(-np.exp(B * (x - M)))
 
 
-def fit_gompertz(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
+def fit_gompertz(v, estimate=True, sanity=None, normalise=None, maxfev=999999):
     """Fit the Gompertz function to a MIC curve
 
     Args:
@@ -160,9 +203,12 @@ def fit_gompertz(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
             this value, do not fit the curve.
             Additionally, if the Spearman correlation between OD and 
             [treatment] is above 0.2 or the maximum OD is above 0.2,
-            the curve is also not fitted.
-        normalise (bool)
-            Whether to normalise the data (i.e. bringing it to a 0-1 range)
+            the curve is also not fitted. 
+        normalise (float or None)
+            Whether to normalise the data (i.e. bringing it to a 0-1 range).
+            The provided value is used to compute the minimum values to have
+            a more robust normalization (the mean of od600 below this
+            value is used)
         maxfev (int)
             Maximum iterations for curve fitting
 
@@ -174,15 +220,28 @@ def fit_gompertz(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
              'SDa', 'SDb',
              'SDc', 'SDd', 'mic']
     v = v[v['concentration'] != 0]
-    if estimate:
-        p0 = [v['od600'].min() / 10,
-              0.8,
-              1,
-              np.log10(v['concentration'].max() / 2)]
-    else:
-        p0 = None
     x = np.log10(v['concentration'].values)
     y = v['od600'].values
+    if normalise is not None:
+        # robust normalisation
+        # use an average of all OD values
+        # below a sensible OD threshold
+        ymin = y[y <= normalise]
+        if ymin.shape[0] == 0:
+            mic = v['concentration'].max()
+            return pd.Series([np.nan, np.nan, np.nan, np.nan,
+                              np.nan, np.nan, np.nan, np.nan,
+                              mic],
+                             index=index)
+        ymin = np.mean(ymin)
+        y = (y - ymin) / (y.max() - ymin)
+    if estimate:
+        p0 = [y.min() / 10,
+              0.8,
+              1,
+              x.max() / 2]
+    else:
+        p0 = None
     if sanity is not None:
         discard = False
         yab = v['od600']
@@ -201,8 +260,6 @@ def fit_gompertz(v, estimate=True, sanity=None, normalise=False, maxfev=999999):
                               np.nan, np.nan, np.nan, np.nan,
                               mic],
                              index=index)
-    if normalise:
-        y = y / np.linalg.norm(y)
     try:
         params = curve_fit(mod_gompertz,
                            x, y,
