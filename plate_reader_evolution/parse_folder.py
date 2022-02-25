@@ -121,12 +121,13 @@ def main():
         m = parse_excel(os.path.join(folder, infile))
 
         if plate not in d[exp]:
-            logger.error(f'plate {plate} from {exp} not in the design table')
-            sys.exit(1)
+            logger.warning(f'plate {plate} from {exp} not in the design table')
+            continue
 
         # join with design table
         m = d[exp][plate].set_index(['row', 'column']).join(m.to_frame(), how='outer')
         m['plate'] = plate
+        m['date'] = date
         m['passage'] = n_passage
         df.append(m)
 
@@ -138,7 +139,7 @@ def main():
     df['experiment'] = exp
     df['type'] = etype.lower()
 
-    df = df.sort_values(['plate', 'passage', 'row', 'column'])
+    df = df.sort_values(['plate', 'passage', 'date', 'row', 'column'])
 
     df.to_csv(options.output, sep='\t')
 

@@ -105,7 +105,7 @@ def main():
                 continue
             name, plate, etype, exp = c.loc[number].values
             outfolder = f'{exp}_renamed_{etype}_{name}'
-            fname = f'{plate}_{date}_{passage}.{extension}'
+            fname = f'{plate}_{date}-{number}_{passage}.{extension}'
 
             orig = os.path.join(folder, f, i)
             dest = os.path.join(output, outfolder, fname)
