@@ -67,6 +67,9 @@ def parse_plate_design(infile):
         if 'Plate Well' not in m.columns:
             raise ValueError('Could not find a column named "Plate Well" '
                              f'in sheet {name} from {infile}')
+        # ignore rows that don't have a value in the "Plate Well" column
+        m = m[~m['Plate Well'].isna()]
+        #
         m['row'] = [x[0] for x in m['Plate Well'].values]
         m['column'] = [int(x[1:]) for x in m['Plate Well'].values]
 
