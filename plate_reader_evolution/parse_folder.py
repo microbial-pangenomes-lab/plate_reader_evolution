@@ -90,8 +90,8 @@ def main():
         logger.error('expecting "evol" in the folder name as experiment type'
                      f', found {etype}')
         sys.exit(1)
-    elif options.mic and etype.lower() != 'mics':
-        logger.error('expecting "mics" in the folder name as experiment type'
+    elif options.mic and (etype.lower() != 'mics' and etype.lower() != 'mic'):
+        logger.error('expecting "mics" or "mic" in the folder name as experiment type'
                      f', found {etype}')
         sys.exit(1)
     if exp not in d:

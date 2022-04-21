@@ -71,7 +71,10 @@ def main():
     logger.info(f'reading plate conversion from {conversion}')
     
     c = pd.read_excel(conversion, header=None)
-    c.columns = ['id', 'name', 'plate', 'type', 'exp']
+    if c.shape[1] == 5:
+        c.columns = ['id', 'name', 'plate', 'type', 'exp']
+    else:
+        c.columns = ['id', 'name', 'plate', 'type', 'exp'] + [f'extra_{i}' for i in c.columns[5:]]
     c = c.set_index('id')
 
     folders = [x for x in os.listdir(folder)
@@ -103,8 +106,8 @@ def main():
             if number not in c.index:
                 logger.warning(f'could not find conversion for file {i}')
                 continue
-            name, plate, etype, exp = c.loc[number].values
-            outfolder = f'{exp}_renamed_{etype}_{name}'
+            name, plate, etype, exp = c.loc[number, ['name', 'plate', 'type', 'exp']].values
+            outfolder = f'{exp}_renamed_{etype}_xxx'
             fname = f'{plate}_{date}-{number}_{passage}.{extension}'
 
             orig = os.path.join(folder, f, i)
