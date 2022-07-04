@@ -17,6 +17,9 @@ STOCK_CONC = 80
 # columns need to be filled
 STOCK_COLUMN_VOLUME = 5000
 STOCK_COLUMN_OVERHEAD_VOLUME = 250
+# same for water, in this case it's a single column
+WATER_COLUMN_VOLUME = 220000
+WATER_COLUMN_OVERHEAD_VOLUME = 5000
 # derived as follows:
 # final: 20uL in each well
 # times 2 to allow for serial dilution to subsequent plates
@@ -47,6 +50,7 @@ metadata = {
 def read_transfers(protocol,
                    fname, stock_conc, final_volume,
                    stock_column_volume, stock_column_overhead_volume,
+                   water_column_volume, water_column_overhead_volume,
                    # assumed to be fixed
                    # deep well plates tend to be maximum 2mL
                    maximum_volume=1950):
@@ -96,13 +100,13 @@ def read_transfers(protocol,
     total_stock = n_columns * stock_column_volume
 
     # check how many columns we need (solvent)
-    n_columns_solvent = required_solvent_volume // (stock_column_volume - stock_column_overhead_volume)
+    n_columns_solvent = required_solvent_volume // (water_column_volume - water_column_overhead_volume)
     n_columns_solvent += 1
     n_columns_solvent = int(n_columns_solvent)
-    if n_columns_solvent > 12:
-        raise ValueError(f'More than 12 columns required for solvent ({n_columns})')
+    if n_columns_solvent > 1:
+        raise ValueError(f'More than 1 plate required for solvent ({n_columns})')
     # total solvent including overhead
-    total_solvent = n_columns_solvent * stock_column_volume
+    total_solvent = n_columns_solvent * water_column_volume
 
     # spell out transfers for double checking
     #protocol.comment('Planned transfers:')
@@ -120,8 +124,8 @@ def read_transfers(protocol,
     protocol.comment(f'Total stock volume including overhead will be {total_stock}')
 
     protocol.comment('\n')
-    protocol.comment(f'Please fill with water {n_columns_solvent} column(s) in 12-column reservoir in place 5')
-    protocol.comment(f'Each column should have {stock_column_volume} uL of water')
+    protocol.comment(f'Please fill with water the single-well reservoir in place 5')
+    protocol.comment(f'Each column should have at least {required_solvent_volume+water_column_overhead_volume} uL of water')
     protocol.comment(f'Total water volume including overhead will be {total_solvent}')
     protocol.comment('\n')
 
@@ -135,7 +139,9 @@ def make_ramp(protocol):
                                TSV_FILE, STOCK_CONC,
                                FINAL_VOLUME,
                                STOCK_COLUMN_VOLUME,
-                               STOCK_COLUMN_OVERHEAD_VOLUME)
+                               STOCK_COLUMN_OVERHEAD_VOLUME,
+                               WATER_COLUMN_VOLUME,
+                               WATER_COLUMN_OVERHEAD_VOLUME)
 
     protocol.set_rail_lights(True)
     protocol.home()
@@ -173,7 +179,7 @@ def make_ramp(protocol):
     plate = protocol.load_labware('vwr_96_wellplate_2000ul', 5)
 
     # water reservoir
-    water_plate = protocol.load_labware('marcolifesciences12x6ml_12_reservoir_6000ul', 6)
+    water_plate = protocol.load_labware('brand_1_reservoir_220000ul', 6)
 
     # A1 to A12
     used_water = 0
@@ -206,7 +212,7 @@ def make_ramp(protocol):
         _vol = []
         _dest = []
         for vol, dest in zip(volumes, destinations):
-            if vol + used_water > STOCK_COLUMN_VOLUME - STOCK_COLUMN_OVERHEAD_VOLUME:
+            if vol + used_water > WATER_COLUMN_VOLUME - WATER_COLUMN_OVERHEAD_VOLUME:
                 # perform the current transfers,
                 # then move pointer to next column
                 if len(_vol) > 0:
@@ -220,7 +226,7 @@ def make_ramp(protocol):
                 _dest = []
                 used_water = 0
                 current_column_water += 1
-                if current_column_water > 12:
+                if current_column_water > 1:
                     raise ValueError('Water reservoir ran out of columns')
                 water = water_plate[f'A{current_column_water}']
 
