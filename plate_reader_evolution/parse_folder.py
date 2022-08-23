@@ -10,7 +10,7 @@ import pandas as pd
 import logging.handlers
 
 from .__init__ import __version__
-from .parse import parse_plate_design, parse_excel
+from .parse import parse_plate_design, parse_excel, parse_excel_time_series
 from .colorlog import ColorFormatter
 
 
@@ -49,10 +49,15 @@ def get_options():
     parser.add_argument('output',
                         help='Output file (tsv format)')
     
-    parser.add_argument('--mic',
-                        action='store_true',
-                        default=False,
-                        help='Folder contains MICs (default: evol. exp.)')
+    etype = parser.add_mutually_exclusive_group()
+    etype.add_argument('--mic',
+                       action='store_true',
+                       default=False,
+                       help='Folder contains MICs (default: evol. exp.)')
+    etype.add_argument('--grate',
+                       action='store_true',
+                       default=False,
+                       help='Folder contains growth curves (default: evol. exp.)')
 
     parser.add_argument('-v', action='count',
                         default=0,
@@ -86,12 +91,16 @@ def main():
 
     exp, edate, etype, _ = a_folder.split('_')
 
-    if not options.mic and etype.lower() != 'evol':
+    if (not options.mic and not options.grate) and etype.lower() != 'evol':
         logger.error('expecting "evol" in the folder name as experiment type'
                      f', found {etype}')
         sys.exit(1)
     elif options.mic and (etype.lower() != 'mics' and etype.lower() != 'mic'):
         logger.error('expecting "mics" or "mic" in the folder name as experiment type'
+                     f', found {etype}')
+        sys.exit(1)
+    elif options.grate and etype.lower() != 'grate':
+        logger.error('expecting "grate" in the folder name as experiment type'
                      f', found {etype}')
         sys.exit(1)
     if exp not in d:
@@ -106,9 +115,9 @@ def main():
         if len(infile.split('.')[0].split('_')) < 3:
             logger.debug(f'skipping {infile} from {folder}')
             continue
-        
+
         plate, date, passage = infile.split('.')[0].split('_')[:3]
-        if not options.mic:
+        if not options.mic and not options.grate:
             # make the passage bit an integer
             # TODO: cross check with the date
             n_passage = int(passage[1:])
@@ -118,14 +127,23 @@ def main():
 
         logger.info(f'about to parse {infile}')
 
-        m = parse_excel(os.path.join(folder, infile))
+        try:
+            m = parse_excel(os.path.join(folder, infile))
+        except:
+            # probably a time series, try the alternative approach
+            logger.debug(f'could not parse {infile} from {folder} '
+                         'trying to see if it is a timeseries')
+            m = parse_excel_time_series(os.path.join(folder, infile))
 
         if plate not in d[exp]:
             logger.warning(f'plate {plate} from {exp} not in the design table')
             continue
 
         # join with design table
-        m = d[exp][plate].set_index(['row', 'column']).join(m.to_frame(), how='outer')
+        if options.grate:
+            m = d[exp][plate].set_index(['row', 'column']).join(m, how='outer')
+        else:
+            m = d[exp][plate].set_index(['row', 'column']).join(m.to_frame(), how='outer')
         m['plate'] = plate
         m['date'] = date
         m['passage'] = n_passage
