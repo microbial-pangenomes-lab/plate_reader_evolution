@@ -17,7 +17,6 @@ sns.set_style('ticks', rc={"axes.facecolor": (0, 0, 0, 0)})
 sns.set_context('paper')
 
 rcParams['font.family'] = 'sans-serif'
-rcParams['font.sans-serif'] = ['Arial']
 
 logger = logging.getLogger('evol.plot')
 
@@ -211,4 +210,39 @@ def plot_mic(df, params, fname, normalise=None, fig=None, name=''):
                 dpi=300, bbox_inches='tight',
                 transparent=True)
     plt.clf()
+
+
+def plot_growth_rate(df, params, fname, fig=None, name=''):
+    if fig is None:
+        fig = create_figure()
+    else:
+        plt.clf()
+
+    plt.plot(df['time'],
+             df['od600'],
+             'k.')
+
+    plt.ylabel('od600')
+    plt.xlabel('time\n(hours)')
+
+    plt.title(name)
+
+    plt.twinx()
+   
+    plt.plot(params['time'],
+             params['grate'],
+             'r.')
+
+    plt.ylabel('growth rate', color='r')
+    plt.yticks(color='r');
+
+    plt.axvline(params.sort_values('grate').iloc[-1]['time'],
+                zorder=-1,
+                ls='dashed', color='xkcd:grey')
+
+    plt.savefig(fname,
+                dpi=300, bbox_inches='tight',
+                transparent=True)
+    plt.clf()
+
 
