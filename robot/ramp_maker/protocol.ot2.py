@@ -62,7 +62,7 @@ def read_transfers(protocol,
     # and solvent
     required_solvent_volume = 0
 
-    for csv_row in protocol.bundled_data['my_drug.tsv'].decode('utf-8').rstrip().split('\n'):
+    for csv_row in protocol.bundled_data[fname].decode('utf-8').rstrip().split('\n'):
         csv_row = csv_row.split('\t')
         row, column, conc = csv_row[:3]
         column = int(column)
