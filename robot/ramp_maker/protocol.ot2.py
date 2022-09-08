@@ -297,10 +297,10 @@ def make_ramp(protocol):
     if p20.has_tip:
         p20.drop_tip()
 
-    protocol.set_rail_lights(False)
-
     protocol.home()
     protocol.cleanup()
+
+    protocol.set_rail_lights(False)
 
 
 def run(protocol: protocol_api.ProtocolContext):
