@@ -53,8 +53,7 @@ if __name__ == '__main__':
     assert(len(o_border) == len(n_border))
     assert(len(o_middle) == len(n_middle))
 
-    o_wells = sorted(o_border + o_middle, key=lambda x: x)
-
     # write the output out
-    for (s_row, s_column), (d_row, d_column) in zip(o_wells, n_border + n_middle):
+    for (s_row, s_column), (d_row, d_column) in zip(border + middle,
+                                                    n_border + n_middle):
         print(f'{s_row}\t{s_column}\t{d_row}\t{d_column}')

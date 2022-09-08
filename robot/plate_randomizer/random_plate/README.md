@@ -16,3 +16,5 @@ each time the script is invoked); then type:
     python3 randomize.py --seed 100 > my_randomization.tsv
 
 The first two columns are the source well, the last two the destination wells
+
+You can use the `plate_checker.ipynb` to verify that the randomization worked as expected.
