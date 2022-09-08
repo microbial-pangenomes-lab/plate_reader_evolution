@@ -10,10 +10,14 @@
 ###############################################################################
 # in ul, depending on the volume a different pipette is used
 TRANSFER_VOLUME = 15
-# in ul, influences the height at which the tip is placed
-SOURCE_VOLUME = 1500
-# in ul, influences the height at which the tip is placed
-DESTINATION_VOLUME = 1485
+# in mm, influences the height at which the tip is placed
+# depends on how much volume the source well has
+# if using a p20 picking a small volume from 1.5mL, then use 10 mm
+P20_SOURCE_CLEARANCE = 10
+# in mm, influences the height at which the tip is placed
+# depends on how much volume the source well has
+# if using a p20 dropping a small volume into 1.5mL, then use 10 mm
+P20_DESTINATION_CLEARANCE = 10
 # should be a csv file with no header and 4 fields
 # 1. source row (A to H)
 # 2. source column (1 to 12)
@@ -87,12 +91,12 @@ def make_transfer(protocol):
 
     if TRANSFER_VOLUME > 20:
         pipette = p300
-        #pipette.well_bottom_clearance.aspirate = 2
-        #pipette.well_bottom_clearance.dispense = 2
+        pipette.well_bottom_clearance.aspirate = 2
+        pipette.well_bottom_clearance.dispense = 1
     else:
         pipette = p20
-        #pipette.well_bottom_clearance.aspirate = 2
-        #pipette.well_bottom_clearance.dispense = 2
+        pipette.well_bottom_clearance.aspirate = P20_SOURCE_CLEARANCE
+        pipette.well_bottom_clearance.dispense = P20_DESTINATION_CLEARANCE
 
     # do the actual transfers
     for s_well, d_well in transfers.items():
