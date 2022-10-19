@@ -11,6 +11,7 @@ import logging.handlers
 
 from .__init__ import __version__
 from .parse import parse_ramp_design, parse_excel, parse_excel_time_series
+from .parse import parse_shuffle_design
 from .colorlog import ColorFormatter
 
 
@@ -79,6 +80,16 @@ def get_options():
                              'concentration in the ramp '
                              '(default: %(default).2f)')
 
+    parser.add_argument('--shuffle-key',
+                        default=None,
+                        help='Randomization key file: '
+                             'excel file with multiple sheets; '
+                             'sheet name should be the replicate '
+                             'that is shuffled, and should contain the'
+                             '"row", "columns", "dest_row", "dest_column" '
+                             'columns. If not provided it is assumed '
+                             'that each replicate has the same layout')
+
     parser.add_argument('-v', action='count',
                         default=0,
                         help='Increase verbosity level')
@@ -93,12 +104,17 @@ def main():
     folder = options.folder
     design = options.design
     treatment = options.treatment
+    shuffle = options.shuffle_key
 
     set_logging(options.v)
 
     logger.info(f'reading plate design from {design}')
 
     de = parse_ramp_design(design, treatment, prefix=options.prefix)
+    ded = []
+    ds = {}
+    if shuffle is not None:
+        ds = parse_shuffle_design(shuffle)
 
     df = []
     for subfolder in [x for x in os.listdir(folder)
@@ -137,18 +153,36 @@ def main():
                 # pick last time point
                 m = m[m['time'] == m['time'].max()]['od600']
 
+            # is this a shuffled replicate?
+            if replicate in ds:
+                logger.debug(f'replicate {replicate} is shuffled, correcting')
+                # make a temp copy of the design
+                dt = de.copy()
+                nr = [ds[replicate][(r, c)][0]
+                      for r, c in dt[['row', 'column']].values]
+                nc = [ds[replicate][(r, c)][1]
+                      for r, c in dt[['row', 'column']].values]
+                dt['row'] = nr
+                dt['column'] = nc
+            else:
+                dt = de.copy()
+            dt['replicate'] = replicate
+            ded.append(dt)
+
             # join with design table
-            m = de.set_index(['row', 'column'])[['strain',
+            m = dt.set_index(['row', 'column'])[['strain',
                                                  treatment]].join(m.to_frame(), how='outer')
             m = m.rename(columns={treatment: 'mic'})
             m['concentration'] = m['mic'].copy()
             m['passage'] = n_passage
             m['replicate'] = replicate
             m = m.reset_index()
+
             df.append(m)
 
             logger.debug(f'parsed {infile}')
 
+    de = pd.concat(ded)
     df = pd.concat(df)
 
     # add metadata
@@ -159,11 +193,11 @@ def main():
     passages = list(range(1, df['passage'].max()))[::-1]
     mics = {x: (2 ** (i+1)) for i, x in enumerate(passages)}
     mics[df['passage'].max()] = 1
-    high = de.set_index(['row', 'column'])[treatment].to_dict()
+    high = de.set_index(['replicate', 'row', 'column'])[treatment].to_dict()
     df['mic'] = [options.mic / mics[x] for x in df['passage'].values]
-    df['concentration'] = [high[(row, column)] / mics[x]
-                           for row, column, x in
-                           df[['row', 'column', 'passage']].values]
+    df['concentration'] = [high.get((rep, row, column), np.nan) / mics[x]
+                           for rep, row, column, x in
+                           df[['replicate', 'row', 'column', 'passage']].values]
 
     df = df.sort_values(['passage', 'replicate', 'row', 'column'])
 

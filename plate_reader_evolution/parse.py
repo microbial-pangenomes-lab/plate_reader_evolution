@@ -185,5 +185,23 @@ def parse_ramp_design(infile, treatment, prefix=None):
         return m
 
 
+def parse_shuffle_design(infile):
+    '''Parse an excel table to access the shuffling map for a replicate
+
+    Returns a dictionary for each sheet
+    '''
+    res = {}
+    d = pd.read_excel(infile, sheet_name=None)
+    for name, m in d.items():
+        res[name] = {}
+        for r, c, nr, nc in m[['row', 'column',
+                               'dest_row', 'dest_column']].values:
+            res[name][(r, c)] = (nr, nc)
+
+    logger.debug(f'parsed {len(res)} plate shuffled maps')
+
+    return res
+
+
 if __name__ == '__main__':
     pass
