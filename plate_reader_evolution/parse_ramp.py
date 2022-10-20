@@ -73,6 +73,16 @@ def get_options():
                              'in the design file must be divided by to get '
                              'the highest concentration used '
                              '(default: %(default).2f)')
+    parser.add_argument('--steps',
+                        type=int,
+                        default=1,
+                        help='How many passages before concentration increase '
+                             '(default: %(default)d)')
+    parser.add_argument('--multiplier',
+                        type=float,
+                        default=2.,
+                        help='Concentration increase at each step (X times) '
+                             '(default: %(default).2f)')
     parser.add_argument('--mic',
                         type=float,
                         default=16.,
@@ -105,6 +115,10 @@ def main():
     design = options.design
     treatment = options.treatment
     shuffle = options.shuffle_key
+    mic = options.mic
+    stock = options.stock
+    steps = options.steps
+    multiplier = options.multiplier
 
     set_logging(options.v)
 
@@ -190,12 +204,13 @@ def main():
     df['type'] = 'ramp'
 
     # encode the MIC ramp relative and absolute values
-    passages = list(range(1, df['passage'].max()))[::-1]
-    mics = {x: (2 ** (i+1)) for i, x in enumerate(passages)}
-    mics[df['passage'].max()] = 1
+    passages = list(range(1, df['passage'].max() + 1 - steps))[::-1]
+    mics = {x: (multiplier ** ((i // steps) + 1)) for i, x in enumerate(passages)}
+    for i in range(steps):
+        mics[df['passage'].max() - i] = 1
     high = de.set_index(['replicate', 'row', 'column'])[treatment].to_dict()
-    df['mic'] = [options.mic / mics[x] for x in df['passage'].values]
-    df['concentration'] = [high.get((rep, row, column), np.nan) / mics[x]
+    df['mic'] = [mic / mics[x] for x in df['passage'].values]
+    df['concentration'] = [high.get((rep, row, column), np.nan) / (mics[x] * stock)
                            for rep, row, column, x in
                            df[['replicate', 'row', 'column', 'passage']].values]
 
