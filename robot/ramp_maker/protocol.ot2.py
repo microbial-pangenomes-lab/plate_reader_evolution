@@ -8,6 +8,8 @@
 # change these values to change the protocol behavior
 #
 ###############################################################################
+# which deep-well plate to use
+LAYOUT = 384
 # doesn't matter which units (uM or ug/mL)
 # as long as it is the same as the one used in
 # the input csv file
@@ -20,23 +22,35 @@ STOCK_COLUMN_OVERHEAD_VOLUME = 250
 # same for water, in this case it's a single column
 WATER_COLUMN_VOLUME = 220000
 WATER_COLUMN_OVERHEAD_VOLUME = 5000
-# derived as follows:
-# final: 20uL in each well
-# times 2 to allow for serial dilution to subsequent plates
-# times 1 to allow for one passages at the same concentration
-# times 6 to allow up to 6 replicates
-# = 240uL, rounded to 270 for safety
-FINAL_VOLUME = 270
+if LAYOUT == 96:
+    # derived as follows:
+    # final: 20uL in each well
+    # times 2 to allow for serial dilution to subsequent plates
+    # times 1 to allow for one passages at the same concentration
+    # times 6 to allow up to 6 replicates
+    # = 240uL, rounded to 270 for safety
+    FINAL_VOLUME = 270
+    # maximum volume for the deep-well plate
+    MAXIMUM_VOLUME = 1950
+elif LAYOUT == 384:
+    # derived as follows:
+    # final: 15uL in each well
+    # times 2 to allow for serial dilution to subsequent plates
+    # times 1 to allow for one passages at the same concentration
+    # times 6 to allow up to 6 replicates
+    # = 180uL, rounded to 200 for safety
+    FINAL_VOLUME = 200
+    # maximum volume for the deep-well plate
+    MAXIMUM_VOLUME = 230
+# NOTE: about the injected data file:
 # should be a csv file with no header and 3 fields
 # 1. row (A to H)
 # 2. column (1 to 12)
 # 3. desired concentration (same units as the STOCK_CONC above)
-TSV_FILE = 'my_drug.tsv'
 ###############################################################################
 
 
 import sys
-import csv
 
 from opentrons import protocol_api
 
@@ -46,14 +60,13 @@ metadata = {
     'author': 'M. Galardini'
     }
 
+HERE_INJECT_DATA
 
 def read_transfers(protocol,
-                   fname, stock_conc, final_volume,
+                   stock_conc, final_volume,
                    stock_column_volume, stock_column_overhead_volume,
                    water_column_volume, water_column_overhead_volume,
-                   # assumed to be fixed
-                   # deep well plates tend to be maximum 2mL
-                   maximum_volume=1950):
+                   maximum_volume):
     # dictionary to keep track of transfers
     transfers = {}
 
@@ -62,7 +75,7 @@ def read_transfers(protocol,
     # and solvent
     required_solvent_volume = 0
 
-    for csv_row in protocol.bundled_data[fname].decode('utf-8').rstrip().split('\n'):
+    for csv_row in DATA:
         csv_row = csv_row.split('\t')
         row, column, conc = csv_row[:3]
         column = int(column)
@@ -136,12 +149,13 @@ def read_transfers(protocol,
 
 def make_ramp(protocol):
     transfers = read_transfers(protocol,
-                               TSV_FILE, STOCK_CONC,
+                               STOCK_CONC,
                                FINAL_VOLUME,
                                STOCK_COLUMN_VOLUME,
                                STOCK_COLUMN_OVERHEAD_VOLUME,
                                WATER_COLUMN_VOLUME,
-                               WATER_COLUMN_OVERHEAD_VOLUME)
+                               WATER_COLUMN_OVERHEAD_VOLUME,
+                               MAXIMUM_VOLUME)
 
     protocol.set_rail_lights(True)
     protocol.home()
@@ -151,24 +165,50 @@ def make_ramp(protocol):
     # left: p300 single
     # right: p20 single
 
-    # 1. 300uL tips
-    # 2. 20uL tips
-    # 4. tube rack with 15mL falcon in A1
-    # 5. 96 deep-well plate
-    # 6. water reservoir in deep well format (single well)
+    if LAYOUT == 96:
+        # 96 well layout
+        # 1. 300uL tips
+        # 2. 20uL tips
+        # 4. stock reservoir
+        # 5. 96 deep-well plate
+        # 6. water reservoir
 
-    # tips
-    tip300 = protocol.load_labware('opentrons_96_tiprack_300ul', 1)
-    tip20 = protocol.load_labware('opentrons_96_tiprack_20ul', 2)
+        # tips
+        tips300 = [protocol.load_labware('opentrons_96_tiprack_300ul', 1), ]
+        tips20 = [protocol.load_labware('opentrons_96_tiprack_20ul', 2), ]
+
+        stock_position = 4
+        plate_position = 5
+        water_position = 6
+        plate_labware = 'vwr_96_wellplate_2000ul'
+
+    elif LAYOUT == 384:
+        # 384 well layout
+        # 1, 2, 4, 5: 300uL tips
+        # 7, 8, 10, 11: 20uL tips
+        # 3: stock reservoir
+        # 6: 384 deep-well plate
+        # 9: water reservoir
+
+        # tips
+        tips300 =[protocol.load_labware('opentrons_96_tiprack_300ul', i)
+                 for i in [1, 2, 4, 5]]
+        tips20 = [protocol.load_labware('opentrons_96_tiprack_20ul', i)
+                 for i in [7, 8, 10, 11]]
+
+        stock_position = 3
+        plate_position = 6
+        water_position = 9
+        plate_labware = 'corning_384_wellplate_240ul'
 
     # pipette arms
     # 20 - 300 uL
-    p300 = protocol.load_instrument('p300_single_gen2', 'left', tip_racks=[tip300])
+    p300 = protocol.load_instrument('p300_single_gen2', 'left', tip_racks=tips300)
     # 1 - 20 uL
-    p20 = protocol.load_instrument('p20_single_gen2', 'right', tip_racks=[tip20])
+    p20 = protocol.load_instrument('p20_single_gen2', 'right', tip_racks=tips20)
 
     # stock reservoir
-    stock_plate = protocol.load_labware('marcolifesciences12x6ml_12_reservoir_6000ul', 4)
+    stock_plate = protocol.load_labware('marcolifesciences12x6ml_12_reservoir_6000ul', stock_position)
 
     # A1 to A12
     used_stock = 0
@@ -176,10 +216,10 @@ def make_ramp(protocol):
     stock = stock_plate[f'A{current_column}']
 
     # destination plate
-    plate = protocol.load_labware('vwr_96_wellplate_2000ul', 5)
+    plate = protocol.load_labware(plate_labware, plate_position)
 
     # water reservoir
-    water_plate = protocol.load_labware('brand_1_reservoir_220000ul', 6)
+    water_plate = protocol.load_labware('brand_1_reservoir_220000ul', water_position)
 
     # A1 to A12
     used_water = 0
