@@ -14,6 +14,11 @@ def get_options():
                         default=100,
                         help='Random seed for reproducible randomizations '
                              '(default: %(default)%d)')
+    parser.add_argument('--plate-384',
+                        action='store_true',
+                        default=False,
+                        help='Use a 384-well plate layout '
+                             '(default: 96-well plate)')
 
     return parser.parse_args()
 
@@ -23,13 +28,24 @@ if __name__ == '__main__':
     # set random seed
     random.seed(options.seed, version=2)
 
+    if options.plate_384:
+        rows = 'ABCDEFGHIJKLMNOP'
+        cols = range(1, 25)
+        outer_rows = set(('A', 'B', 'O', 'P'))
+        outer_cols = set((1, 2, 23, 24))
+    else:
+        rows = 'ABCDEFGH'
+        cols = range(1, 13)
+        outer_rows = set(('A', 'H'))
+        outer_cols = set((1, 12))
+
     border = []
     middle = []
-    for row in 'ABCDEFGH':
-        for column in range(1, 13):
-            if row == 'A' or row == 'H':
+    for row in rows:
+        for column in cols:
+            if row in outer_rows:
                 border.append( (row, column) )
-            elif column == 1 or column == 12:
+            elif column in outer_cols:
                 border.append( (row, column) )
             else:
                 middle.append( (row, column) )

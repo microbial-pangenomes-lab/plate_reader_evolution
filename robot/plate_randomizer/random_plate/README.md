@@ -17,4 +17,8 @@ each time the script is invoked); then type:
 
 The first two columns are the source well, the last two the destination wells
 
+To randomize a 384-well plate layout, type the following:
+
+    python3 randomize.py --seed 100 --plate-384 > my_384_randomization.tsv
+
 You can use the `plate_checker.ipynb` to verify that the randomization worked as expected.
