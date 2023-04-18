@@ -57,7 +57,7 @@ def check_column(used_volume,
         used_volume = 0
         current_column += 1
         if current_column > maximum_columns:
-            protocol.pause('WARNING: reservoir is estimated to have ran out, please refill and press resume')
+            protocol.comment('WARNING: reservoir is estimated to have ran out')
             current_column = 1
         current_pointer = plate[f'A{current_column}']
     return used_volume, current_column, current_pointer
@@ -162,19 +162,19 @@ def make_mic(protocol):
     # 384 well layout
     # 7, 9: 20uL tips
     # 4: stock reservoir
-    # 11, 8, 5, 2, 7, 9: 384 plates
+    # 11, 8, 5, 2, 1, 3: 384 plates
     # 6: water reservoir
 
     # tips
     tips20 = [protocol.load_labware('opentrons_96_tiprack_20ul', i)
-              for i in [4, 6]]
+              for i in [7, 9]]
 
     stock_position = 4
-    water_position = 9
+    water_position = 6
     plate_labware = 'corning_384_wellplate_240ul'
 
-    plate_positions = [11, 8, 5, 2, 7, 9]
-    loaded_plates = 0
+    plate_positions = [11, 8, 5, 2, 1, 3]
+    finished_plates = 0
 
     # 1 - 20 uL
     p20 = protocol.load_instrument('p20_multi_gen2', 'right', tip_racks=tips20)
@@ -200,32 +200,32 @@ def make_mic(protocol):
     # 1. water (across all plates)
     # 2. drug (across all plates)
 
-    while loaded_plates < PLATES:
-        # destination plates
-        plates = []
-        for plate_pos in plate_positions:
-            plate = protocol.load_labware(plate_labware, plate_pos)
-            plates.append(plate)
-            loaded_plates += 1
-            # we are done with the plates we intended to do
-            if loaded_plates == PLATES:
-                break
+    # destination plates
+    plates = []
+    for plate_pos in plate_positions:
+        plate = protocol.load_labware(plate_labware, plate_pos)
+        plates.append(plate)
+
+    while finished_plates < PLATES:
+        _plates = [x for x in plates]
+        if finished_plates + len(_plates) > PLATES:
+            _plates = _plates[:PLATES - finished_plates]
 
         # water
         p20.pick_up_tip()
         _water = 0
-        for plate in plates:
-            p20.aspirate(target_volume, water)
-            p20.dispense(target_volume, plate.wells_by_name()['A24'])
-            p20.aspirate(target_volume, water)
-            p20.dispense(target_volume, plate.wells_by_name()['A23'])
-            _water += target_volume * 2
+        for plate in _plates:
+            p20.aspirate(TARGET_VOLUME, water)
+            p20.dispense(TARGET_VOLUME, plate.wells_by_name()['A24'])
+            p20.aspirate(TARGET_VOLUME, water)
+            p20.dispense(TARGET_VOLUME, plate.wells_by_name()['A23'])
+            _water += TARGET_VOLUME * 2
             _water, current_column_water, water = check_column(_water,
                           WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
                           water, water_plate, current_column_water)
             for column in range(1, 23):
                 p20.aspirate(water_volume, water)
-                p20.dispense(water_volume, plate.wells_by_name()['A%02d' % column])
+                p20.dispense(water_volume, plate.wells_by_name()['A%d' % column])
                 _water += water_volume
                 _water, current_column_water, water = check_column(_water,
                               WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
@@ -235,7 +235,7 @@ def make_mic(protocol):
         # drug
         p20.pick_up_tip()
         _drug = 0
-        for plate in plates:
+        for plate in _plates:
             p20.aspirate(volume, stock)
             p20.dispense(volume, plate.wells_by_name()['A1'])
             _drug += volume
@@ -244,17 +244,21 @@ def make_mic(protocol):
                           stock, stock_plate, current_column)
             previous_column = 1
             for column in range(2, 23):
-                p20.aspirate(volume, plate.wells_by_name()['A%02d' % previous_column])
-                p20.dispense(volume, plate.wells_by_name()['A%02d' % column])
+                p20.aspirate(volume, plate.wells_by_name()['A%d' % previous_column])
+                p20.dispense(volume, plate.wells_by_name()['A%d' % column])
                 previous_column = column
         # get rid of overhead drug + water in column 1
         p20.aspirate(volume, plate.wells_by_name()['A22'])
         # just drop it in the trash
         p20.drop_tip()
 
-        protocol.comment('Please load the next batch of 6 plates')
-        protocol.comment('Please refill the water plate as needed')
-        protocol.pause('When done click Resume')
+        finished_plates += len(_plates)
+
+        if finished_plates < PLATES:
+            protocol.comment('Please load the next batch of 6 plates')
+            protocol.comment('Please refill the water plate as needed')
+            protocol.pause('When done click Resume')
+
 
     if p20.has_tip:
         p20.drop_tip()
