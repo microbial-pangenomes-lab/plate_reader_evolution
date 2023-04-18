@@ -22,6 +22,9 @@ STOCK_COLUMN_OVERHEAD_VOLUME = 250
 # same for water, in this case it's a single column
 WATER_COLUMN_VOLUME = 220000
 WATER_COLUMN_OVERHEAD_VOLUME = 5000
+# when using 384 plate the 300 ul tips need to be higher
+# to avoid overflows (in mm)
+P300_CLEARANCE = 15
 if LAYOUT == 96:
     # derived as follows:
     # final: 20uL in each well
@@ -204,6 +207,8 @@ def make_ramp(protocol):
     # pipette arms
     # 20 - 300 uL
     p300 = protocol.load_instrument('p300_single_gen2', 'left', tip_racks=tips300)
+    if LAYOUT == 384:
+        p300.well_bottom_clearance.dispense = P300_CLEARANCE
     # 1 - 20 uL
     p20 = protocol.load_instrument('p20_single_gen2', 'right', tip_racks=tips20)
 
