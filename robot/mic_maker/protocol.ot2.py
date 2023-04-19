@@ -14,15 +14,6 @@
 # there are ~384 strains to test
 # in duplicate
 PLATES = 48
-# doesn't matter which units (uM or ug/mL)
-# as long as it is the same as the one used
-# in all the other variables
-# should have the same dilution factor
-# as in the plate
-# so if dilutio factor is 2
-# the stock concentration is double that
-# of the firwst well (i.e. 40)
-STOCK_CONC = 80
 # by how much the drug gets diluted at each step
 DILUTION_FACTOR = 1.4
 # in uL
@@ -118,24 +109,24 @@ def check_volumes(protocol,
     n_columns_solvent = required_solvent_volume // (water_column_volume - water_column_overhead_volume)
     n_columns_solvent += 1
     n_columns_solvent = int(n_columns_solvent)
-    if n_columns_solvent > 1:
-        protocol.comment(f'More than 1 refill required for solvent (estimated: {n_columns_solvent} refills)')
     # total solvent including overhead
     total_solvent = n_columns_solvent * water_column_volume
 
     protocol.comment(f'Will perfom {transfers} tranfers over {plates} plates')
     protocol.comment(f'Will use {required_stock_volume} uL of stock solution')
-    protocol.comment(f'Will use {required_solvent_volume} uL of water')
+    protocol.comment(f'Will use {required_solvent_volume} uL of media')
     protocol.comment('\n')
 
-    protocol.comment(f'Please fill with stock {n_columns} column(s) in 12-column reservoir in place 3')
+    protocol.comment(f'Please fill with stock {n_columns} column(s) in 12-column reservoir')
     protocol.comment(f'Each column should have {stock_column_volume} uL of stock')
     protocol.comment(f'Total stock volume including overhead will be {total_stock}')
 
     protocol.comment('\n')
-    protocol.comment(f'Please fill with water the single-well reservoir in place 5')
-    protocol.comment(f'Each column should have at least {required_solvent_volume+water_column_overhead_volume} uL of water')
-    protocol.comment(f'Total water volume including overhead will be {total_solvent}')
+    protocol.comment(f'Please fill with media the single-well reservoir')
+    protocol.comment(f'Each column should have at least {required_solvent_volume+water_column_overhead_volume} uL of media')
+    protocol.comment(f'Total media volume including overhead will be {total_solvent}')
+    if n_columns_solvent > 1:
+        protocol.comment(f'More than 1 refill required for media (estimated: {n_columns_solvent} refills)')
     protocol.comment('\n')
 
     protocol.pause('When done click Resume')
@@ -256,7 +247,7 @@ def make_mic(protocol):
 
         if finished_plates < PLATES:
             protocol.comment('Please load the next batch of 6 plates')
-            protocol.comment('Please refill the water plate as needed')
+            protocol.comment('Please refill the media plate as needed')
             protocol.pause('When done click Resume')
 
 
