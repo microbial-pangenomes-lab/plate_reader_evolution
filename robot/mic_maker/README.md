@@ -6,9 +6,9 @@ MIC tests. The highest concentration is in column 1, column 23 and 24
 have only water.
 Up to 6 plates at a time are prepared.
 
-IMPORTANT: the stock concentration should be `DILUTION_FACTOR * concentration_column_1`.
+IMPORTANT: the stock concentration should be `DILUTION_FACTOR * concentration_column_1 * 2`.
 So if the dilution factor is 2 and the concentration in column 1 is 10
-the stock concentration should be 20.
+the stock concentration should be 40.
 
 Usage
 -----
