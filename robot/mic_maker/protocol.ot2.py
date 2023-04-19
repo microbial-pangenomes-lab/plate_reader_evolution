@@ -17,8 +17,8 @@ PLATES = 48
 # by how much the drug gets diluted at each step
 DILUTION_FACTOR = 1.4
 # in uL
-# assumed to be 1/10th of final volume for the MIC
-TARGET_VOLUME = 60
+# assumed to be 1/2 of final volume for the MIC
+TARGET_VOLUME = 30
 # in uL, how much volume each column
 # can hold, useful to tell the user how many
 # columns need to be filled
@@ -68,17 +68,19 @@ def check_volumes(protocol,
     # and solvent
     required_solvent_volume = 0
 
+    # volume before passing over to the next column
+    # derived this by reverse-engineering https://www.aatbio.com/tools/serial-dilution
+    volume_before = target_volume / (1 - (1 / dilution_factor))
+
     # needs to be added in the first column only
-    volume = target_volume * (dilution_factor - 1)
+    volume = volume_before - target_volume
     # safety check on volume
     if volume < 1:
         raise ValueError(f'Target volume '
-                            'is below 1uL')
+                          'is below 1uL')
 
     # for each column
-    solvent_volume = (dilution_factor - 1) * target_volume
-    solvent_volume += target_volume
-    solvent_volume -= volume
+    solvent_volume = target_volume
 
     for plate in range(plates):
         for row in 'ABCDEFGHIJKLMNOP':
@@ -162,7 +164,7 @@ def make_mic(protocol):
 
     stock_position = 4
     water_position = 6
-    plate_labware = 'corning_384_wellplate_240ul'
+    plate_labware = 'corning_384_wellplate_112ul_flat'
 
     plate_positions = [11, 8, 5, 2, 1, 3]
     finished_plates = 0
