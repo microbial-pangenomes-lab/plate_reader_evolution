@@ -27,6 +27,9 @@ STOCK_COLUMN_OVERHEAD_VOLUME = 250
 # same for water, in this case it's a single column
 WATER_COLUMN_VOLUME = 220000
 WATER_COLUMN_OVERHEAD_VOLUME = 5000
+# when using 384 plate the 300 ul tips need to be higher
+# to avoid overflows (in mm)
+P300_CLEARANCE = 15
 ###############################################################################
 
 import sys
@@ -171,6 +174,7 @@ def make_mic(protocol):
 
     # 1 - 20 uL
     p300 = protocol.load_instrument('p300_multi_gen2', 'right', tip_racks=tips300)
+    p300.well_bottom_clearance.dispense = P300_CLEARANCE
 
     # stock reservoir
     stock_plate = protocol.load_labware('marcolifesciences12x6ml_12_reservoir_6000ul', stock_position)
