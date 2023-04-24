@@ -33,16 +33,27 @@ if __name__ == '__main__':
         cols = range(1, 25)
         outer_rows = set(('A', 'B', 'O', 'P'))
         outer_cols = set((1, 2, 23, 24))
+        skip_rows = set(('A', 'P'))
+        skip_cols = set((1, 24))
     else:
         rows = 'ABCDEFGH'
         cols = range(1, 13)
         outer_rows = set(('A', 'H'))
         outer_cols = set((1, 12))
+        skip_rows = set()
+        skip_cols = set()
 
     border = []
     middle = []
+    keep = []
     for row in rows:
         for column in cols:
+            if row in skip_rows:
+                keep.append( (row, column) )
+                continue
+            elif column in skip_cols:
+                keep.append( (row, column) )
+                continue
             if row in outer_rows:
                 border.append( (row, column) )
             elif column in outer_cols:
