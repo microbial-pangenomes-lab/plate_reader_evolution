@@ -220,13 +220,19 @@ def make_mic(protocol):
             _water, current_column_water, water = check_column(_water,
                           WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
                           water, water_plate, current_column_water)
-            for column in range(1, 23):
+            for column in range(2, 23):
                 p300.aspirate(water_volume, water)
                 p300.dispense(water_volume, plate.wells_by_name()['A%d' % column])
                 _water += water_volume
                 _water, current_column_water, water = check_column(_water,
                               WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
                               water, water_plate, current_column_water)
+            p300.aspirate(TARGET_VOLUME, water)
+            p300.dispense(TARGET_VOLUME, plate.wells_by_name()['A1'])
+            _water += TARGET_VOLUME
+            _water, current_column_water, water = check_column(_water,
+                          WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
+                          water, water_plate, current_column_water)
         p300.drop_tip()
 
         # drug
@@ -234,7 +240,7 @@ def make_mic(protocol):
         _drug = 0
         for plate in _plates:
             p300.aspirate(volume, stock)
-            p300.dispense(volume, plate.wells_by_name()['A1'])
+            p300.dispense(volume, plate.wells_by_name()['A2'])
             _drug += volume
             _drug, current_column, stock = check_column(_drug,
                           STOCK_COLUMN_VOLUME, STOCK_COLUMN_OVERHEAD_VOLUME,
