@@ -64,6 +64,9 @@ if __name__ == '__main__':
     options = get_options()
 
     m = parse_excel(options.table).reset_index()
+    # skip the collar
+    m = m[(m['row'].isin([x for x in 'BCDEFGHIJKLMNO'])) &
+          (m['column'].isin([i for i in range(2, 24)]))]
     m = m.groupby(['row', 'column'])['od600'].mean().reset_index()
     for l in open(options.protocol):
         if l.strip() != options.tag:
