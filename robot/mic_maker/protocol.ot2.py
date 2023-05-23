@@ -22,8 +22,8 @@ TARGET_VOLUME = 30
 # in uL, how much volume each column
 # can hold, useful to tell the user how many
 # columns need to be filled
-STOCK_COLUMN_VOLUME = 5000
-STOCK_COLUMN_OVERHEAD_VOLUME = 250
+STOCK_COLUMN_VOLUME = 220000
+STOCK_COLUMN_OVERHEAD_VOLUME = 5000
 # same for water, in this case it's a single column
 WATER_COLUMN_VOLUME = 220000
 WATER_COLUMN_OVERHEAD_VOLUME = 5000
@@ -46,7 +46,7 @@ metadata = {
 def check_column(used_volume,
                  column_volume, column_overhead_volume,
                  current_pointer,
-                 plate, current_column):
+                 plate, current_column, maximum_columns=1):
     if used_volume > column_volume - column_overhead_volume:
         used_volume = 0
         current_column += 1
@@ -105,8 +105,6 @@ def check_volumes(protocol,
     n_columns = required_stock_volume // (stock_column_volume - stock_column_overhead_volume)
     n_columns += 1
     n_columns = int(n_columns)
-    if n_columns > 12:
-        raise ValueError(f'More than 12 columns required for stock ({n_columns})')
     # total stock including overhead
     total_stock = n_columns * stock_column_volume
 
@@ -122,8 +120,8 @@ def check_volumes(protocol,
     protocol.comment(f'Will use {required_solvent_volume} uL of media')
     protocol.comment('\n')
 
-    protocol.comment(f'Please fill with stock {n_columns} column(s) in 12-column reservoir')
-    protocol.comment(f'Each column should have {stock_column_volume} uL of stock')
+    protocol.comment(f'Please fill with stock the single-well reservoir')
+    protocol.comment(f'Each column should have {stock_column_volume+stock_column_overhead_volume} uL of stock')
     protocol.comment(f'Total stock volume including overhead will be {total_stock}')
 
     protocol.comment('\n')
@@ -177,7 +175,7 @@ def make_mic(protocol):
     p300.well_bottom_clearance.dispense = P300_CLEARANCE
 
     # stock reservoir
-    stock_plate = protocol.load_labware('marcolifesciences12x6ml_12_reservoir_6000ul', stock_position)
+    stock_plate = protocol.load_labware('brand_1_reservoir_220000ul', stock_position)
 
     # A1 to A12
     used_stock = 0
