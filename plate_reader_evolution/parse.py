@@ -9,11 +9,11 @@ import pandas as pd
 logger = logging.getLogger('evol.parse')
 
 
-def parse_excel(infile):
+def parse_excel(infile, p384=False):
     '''Parse an excel output from the BioTek plate reader
 
     The expecation is that the OD values are a single timepoint, from a 96-well
-    microplate.
+    or 384-well microplate.
 
     More replicates are possible and their number is determined heuristically
     '''
@@ -24,14 +24,19 @@ def parse_excel(infile):
 
     n_values = n.shape[0]
 
-    # we assume a 96 well plate, so 8 rows
-    repeats = n_values // 8
-    rest = n_values % 8
+    if not p384:
+        # we assume a 96 well plate, so 8 rows
+        repeats = n_values // 8
+        rest = n_values % 8
 
-    # if we have spare change must assume something is not right
-    if rest != 0:
-        raise ValueError(f'Could not parse {infile}; found {n_values} '
-                          'measurements, not a multiple of 8')
+        # if we have spare change must assume something is not right
+        if rest != 0:
+            raise ValueError(f'Could not parse {infile}; found {n_values} '
+                              'measurements, not a multiple of 8')
+    else:
+        # we assume a 384 well plate, so 16 rows
+        repeats = n_values // 16
+        rest = n_values % 16
 
     logger.debug(f'Found {repeats} from {infile}')
 
@@ -39,8 +44,12 @@ def parse_excel(infile):
     m = m.iloc[-n_values:, 2:-1]
 
     # assign row and col names
-    m.index = list(''.join([x * repeats for x in 'ABCDEFGH']))
-    m.columns = list(range(1, 13))
+    if not p384:
+        m.index = list(''.join([x * repeats for x in 'ABCDEFGH']))
+        m.columns = list(range(1, 13))
+    else:
+        m.index = list(''.join([x * repeats for x in 'ABCDEFGHIJKLMNOP']))
+        m.columns = list(range(1, 25))
 
     m.index.name = 'row'
     m.columns.name = 'column'

@@ -59,6 +59,12 @@ def get_options():
                        default=False,
                        help='Folder contains growth curves (default: evol. exp.)')
 
+    parser.add_argument('--p384',
+                        action='store_true',
+                        default=False,
+                        help='Experiment is done on 384 plates (default: 96 wells, '
+                             'would not work with time series data)')
+
     parser.add_argument('-v', action='count',
                         default=0,
                         help='Increase verbosity level')
@@ -128,8 +134,12 @@ def main():
         logger.info(f'about to parse {infile}')
 
         try:
-            m = parse_excel(os.path.join(folder, infile))
+            m = parse_excel(os.path.join(folder, infile), p384=options.p384)
         except:
+            if options.p384:
+                logger.error(f'could not parse {infile} from {folder}')
+                sys.exit(1)
+
             # probably a time series, try the alternative approach
             logger.debug(f'could not parse {infile} from {folder} '
                          'trying to see if it is a timeseries')
