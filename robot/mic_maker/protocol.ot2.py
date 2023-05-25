@@ -162,7 +162,7 @@ def make_mic(protocol):
 
     # tips
     tips300 = [protocol.load_labware('opentrons_96_tiprack_300ul', i)
-               for i in [7, 9]]
+               for i in [7, 9, 10]]
 
     stock_position = 4
     water_position = 6
