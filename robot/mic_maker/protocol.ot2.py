@@ -29,7 +29,8 @@ WATER_COLUMN_VOLUME = 220000
 WATER_COLUMN_OVERHEAD_VOLUME = 5000
 # when using 384 plate the 300 ul tips need to be higher
 # to avoid overflows (in mm)
-P300_CLEARANCE = 15
+P300_CLEARANCE_MEDIA = 15
+P300_CLEARANCE_DRUG = 15
 ###############################################################################
 
 import sys
@@ -172,7 +173,7 @@ def make_mic(protocol):
 
     # 1 - 20 uL
     p300 = protocol.load_instrument('p300_multi_gen2', 'right', tip_racks=tips300)
-    p300.well_bottom_clearance.dispense = P300_CLEARANCE
+    p300.well_bottom_clearance.dispense = P300_CLEARANCE_MEDIA
 
     # stock reservoir
     stock_plate = protocol.load_labware('brand_1_reservoir_220000ul', stock_position)
@@ -210,46 +211,49 @@ def make_mic(protocol):
         p300.pick_up_tip()
         _water = 0
         for plate in _plates:
-            p300.aspirate(TARGET_VOLUME, water)
-            p300.dispense(TARGET_VOLUME, plate.wells_by_name()['A24'])
-            p300.aspirate(TARGET_VOLUME, water)
-            p300.dispense(TARGET_VOLUME, plate.wells_by_name()['A23'])
-            _water += TARGET_VOLUME * 2
-            _water, current_column_water, water = check_column(_water,
-                          WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
-                          water, water_plate, current_column_water)
-            for column in range(2, 23):
-                p300.aspirate(water_volume, water)
-                p300.dispense(water_volume, plate.wells_by_name()['A%d' % column])
-                _water += water_volume
+            for row in ('A', 'B'):
+                p300.aspirate(TARGET_VOLUME, water)
+                p300.dispense(TARGET_VOLUME, plate.wells_by_name()[f'{row}24'])
+                p300.aspirate(TARGET_VOLUME, water)
+                p300.dispense(TARGET_VOLUME, plate.wells_by_name()[f'{row}23'])
+                _water += TARGET_VOLUME * 2
                 _water, current_column_water, water = check_column(_water,
                               WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
                               water, water_plate, current_column_water)
-            p300.aspirate(TARGET_VOLUME, water)
-            p300.dispense(TARGET_VOLUME, plate.wells_by_name()['A1'])
-            _water += TARGET_VOLUME
-            _water, current_column_water, water = check_column(_water,
-                          WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
-                          water, water_plate, current_column_water)
+                for column in range(2, 23):
+                    p300.aspirate(water_volume, water)
+                    p300.dispense(water_volume, plate.wells_by_name()['%s%d' % {row, column}])
+                    _water += water_volume
+                    _water, current_column_water, water = check_column(_water,
+                                  WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
+                                  water, water_plate, current_column_water)
+                p300.aspirate(TARGET_VOLUME, water)
+                p300.dispense(TARGET_VOLUME, plate.wells_by_name()[f'{row}1'])
+                _water += TARGET_VOLUME
+                _water, current_column_water, water = check_column(_water,
+                              WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
+                              water, water_plate, current_column_water)
         p300.drop_tip()
 
         # drug
+        p300.well_bottom_clearance.dispense = P300_CLEARANCE_DRUG
         p300.pick_up_tip()
         _drug = 0
         for plate in _plates:
-            p300.aspirate(volume, stock)
-            p300.dispense(volume, plate.wells_by_name()['A2'])
-            _drug += volume
-            _drug, current_column, stock = check_column(_drug,
-                          STOCK_COLUMN_VOLUME, STOCK_COLUMN_OVERHEAD_VOLUME,
-                          stock, stock_plate, current_column)
-            previous_column = 1
-            for column in range(2, 23):
-                p300.aspirate(volume, plate.wells_by_name()['A%d' % previous_column])
-                p300.dispense(volume, plate.wells_by_name()['A%d' % column])
-                previous_column = column
-        # get rid of overhead drug + water in column 1
-        p300.aspirate(volume, plate.wells_by_name()['A22'])
+            for row in ('A', 'B'):
+                p300.aspirate(volume, stock)
+                p300.dispense(volume, plate.wells_by_name()[f'{row}2'])
+                _drug += volume
+                _drug, current_column, stock = check_column(_drug,
+                              STOCK_COLUMN_VOLUME, STOCK_COLUMN_OVERHEAD_VOLUME,
+                              stock, stock_plate, current_column)
+                previous_column = 2
+                for column in range(3, 23):
+                    p300.aspirate(volume, plate.wells_by_name()['%s%d' % (row, previous_column)])
+                    p300.dispense(volume, plate.wells_by_name()['%s%d' % (row, column)])
+                    previous_column = column
+                # get rid of overhead drug + water in column 1
+                p300.aspirate(volume, plate.wells_by_name()[f'{row}22'])
         # just drop it in the trash
         p300.drop_tip()
 
