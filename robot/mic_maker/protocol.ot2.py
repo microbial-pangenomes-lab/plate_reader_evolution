@@ -241,6 +241,8 @@ def make_mic(protocol):
         _drug = 0
         for plate in _plates:
             for row in ('A', 'B'):
+                if not p300.has_tip:
+                    p300.pick_up_tip()
                 p300.aspirate(volume, stock)
                 p300.dispense(volume, plate.wells_by_name()[f'{row}2'])
                 _drug += volume
@@ -256,8 +258,6 @@ def make_mic(protocol):
                 p300.aspirate(volume, plate.wells_by_name()[f'{row}22'])
                 # just drop it in the trash
                 p300.drop_tip()
-                if row == 'A':
-                    p300.pick_up_tip()
 
         finished_plates += len(_plates)
 
