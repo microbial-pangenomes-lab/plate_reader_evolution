@@ -162,7 +162,7 @@ def make_mic(protocol):
 
     # tips
     tips300 = [protocol.load_labware('opentrons_96_tiprack_300ul', i)
-               for i in [7, 9, 10]]
+               for i in [7, 9]]
 
     stock_position = 4
     water_position = 6
@@ -190,6 +190,9 @@ def make_mic(protocol):
     used_water = 0
     current_column_water = 1
     water = water_plate[f'A{current_column_water}']
+
+    # waste reservoir
+    waste_plate = protocol.load_labware('brand_1_reservoir_220000ul', 10)
 
     # do the actual transfers
 
@@ -254,7 +257,8 @@ def make_mic(protocol):
                     previous_column = column
                 # get rid of overhead drug + water in column 1
                 p300.aspirate(volume, plate.wells_by_name()[f'{row}22'])
-                p300.blow_out(p300.trash_container)
+                p300.dispense(waste_plate)
+                p300.blow_out()
         # just drop it in the trash
         p300.drop_tip()
 
