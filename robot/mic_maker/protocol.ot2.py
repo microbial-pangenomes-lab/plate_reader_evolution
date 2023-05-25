@@ -254,7 +254,7 @@ def make_mic(protocol):
                     previous_column = column
                 # get rid of overhead drug + water in column 1
                 p300.aspirate(volume, plate.wells_by_name()[f'{row}22'])
-                p300.dispense(p300.trash_container)
+                p300.dispense(volume, p300.trash_container)
                 p300.blow_out()
         # just drop it in the trash
         p300.drop_tip()
