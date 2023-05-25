@@ -222,7 +222,7 @@ def make_mic(protocol):
                               water, water_plate, current_column_water)
                 for column in range(2, 23):
                     p300.aspirate(water_volume, water)
-                    p300.dispense(water_volume, plate.wells_by_name()['%s%d' % {row, column}])
+                    p300.dispense(water_volume, plate.wells_by_name()['%s%d' % (row, column)])
                     _water += water_volume
                     _water, current_column_water, water = check_column(_water,
                                   WATER_COLUMN_VOLUME, WATER_COLUMN_OVERHEAD_VOLUME,
