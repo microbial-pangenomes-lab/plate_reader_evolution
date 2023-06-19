@@ -111,17 +111,24 @@ def plot_appearance(df, s_colors, fname):
     plt.clf()
 
 
-def plot_plate(df, fname, fig=None, name=''):
+def plot_plate(df, fname, fig=None, name='', p384=False):
     if fig is None:
         fig = create_figure()
     else:
         plt.clf()
 
+    if not p384:
+        rows = 'ABCDEFGH'
+        columns = range(1, 13)
+    else:
+        rows = 'ABCDEFGHIJKLMNOP'
+        columns = range(1, 25)
+
     sns.heatmap(df.pivot_table(index='row',
                                columns='column',
                                values='od600').reindex(index=[x
-                                                  for x in 'ABCDEFGH'],
-                                                  columns=range(1, 13)),
+                                                  for x in rows],
+                                                  columns=columns),
                 cmap='viridis',
                 vmin=0,
                 vmax=1,

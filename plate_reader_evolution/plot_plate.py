@@ -44,6 +44,12 @@ def get_options():
     parser.add_argument('output',
                         help='Output directory')
    
+    parser.add_argument('--p384',
+                        action='store_true',
+                        default=False,
+                        help='Experiment is done on 384 plates (default: 96 wells, '
+                             'would not work with time series data)')
+
     parser.add_argument('--format',
                         choices=('png',
                                  'tiff',
@@ -61,12 +67,12 @@ def get_options():
     return parser.parse_args()
 
 
-def plot(v, outdir, fmt, fig):
+def plot(v, outdir, fmt, fig, p384=False):
     name = '_'.join([str(x) for x in v.name])
     fname = os.path.join(outdir, f'{name}.{fmt}')
     logger.info(f'plotting plate {name}')
     logger.debug(f'creating file {fname}')
-    plot_plate(v, fname, fig=fig, name=name)
+    plot_plate(v, fname, fig=fig, name=name, p384=p384)
 
 
 def main():
@@ -87,7 +93,8 @@ def main():
     df.groupby(groupby).apply(plot,
                               outdir=options.output,
                               fmt=options.format,
-                              fig=fig)
+                              fig=fig,
+                              p384=options.p384)
 
 if __name__ == "__main__":
     main()
