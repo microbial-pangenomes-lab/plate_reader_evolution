@@ -62,6 +62,32 @@ def read_transfers(protocol):
 def od_equalizer(protocol):
     transfers, transfer_2 = read_transfers(protocol)
 
+    # make sure there are enough tips for the job
+    # i.e. one box for media, 0 to 4 for bug transfers
+    i300 = len([media_volume for well, (bug_volume, media_volume) in transfers.items()
+                if media_volume > 20])
+    i20 = len([media_volume for well, (bug_volume, media_volume) in transfers.items()
+               if media_volume <= 20])
+    j300 = len([bug_volume for well, (bug_volume, media_volume) in transfers.items()
+                if bug_volume > 20])
+    j20 = len([bug_volume for well, (bug_volume, media_volume) in transfers.items()
+               if bug_volume <= 20])
+    ibox300 = 0
+    ibox20 = 0
+    if i300 > 0:
+        ibox300 += 1
+    ibox300 += j300 // 96
+    if j300 % 96 > 0:
+        ibox300 += 1
+    if i20 > 0:
+        ibox20 += 1
+    ibox20 += j20 // 96
+    if j20 % 96 > 0:
+        ibox20 += 1
+    # do we have enough slots?
+    if ibox300 + ibox20 > 8:
+        raise ValueError('Not enough space in deck for all needed tips')
+
     protocol.set_rail_lights(True)
     protocol.home()
 
@@ -71,17 +97,22 @@ def od_equalizer(protocol):
     # left: p300 single
 
     # 384 well layout
-    # 3, 2, 9, 8: 20uL tips
-    # 1, 7: 300uL tips
     # 4: media reservoir
     # 6: source deep 384 plate
     # 5: intermediate deep 384 plate
 
     # tips
+    tip_slots = [1, 2, 3, 7, 8, 9, 10, 11]
+    t20 = []
+    for i in range(ibox20):
+        t20.append(tip_slots[i])
+    t300 = []
+    for i in range(ibox300):
+        t300.append(tip_slots[len(t20) + i])
     tips20 = [protocol.load_labware('opentrons_96_tiprack_20ul', i)
-              for i in [3, 2, 9, 8]]
+              for i in t20]
     tips300 = [protocol.load_labware('opentrons_96_tiprack_300ul', i)
-               for i in [1, 7]]
+               for i in t300]
 
     media_position = 4
     source_position = 6
