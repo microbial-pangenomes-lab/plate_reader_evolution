@@ -39,7 +39,7 @@ def get_options():
                         help='Input reading from plate reader; '
                              'should contain the following columns: '
                              '"row", "column", '
-                             '"plate", "passage", '
+                             '"plate", "passage", "date",'
                              '"experiment", "od600"')
     parser.add_argument('output',
                         help='Output directory')
@@ -49,6 +49,11 @@ def get_options():
                         default=False,
                         help='Experiment is done on 384 plates (default: 96 wells, '
                              'would not work with time series data)')
+
+    parser.add_argument('--mic',
+                        action='store_true',
+                        default=False,
+                        help='Experiment is an MIC assesment (default: serial passaging)')
 
     parser.add_argument('--format',
                         choices=('png',
@@ -87,8 +92,11 @@ def main():
         logger.info(f'reading data from {filename}')
         df.append(pd.read_csv(filename, sep='\t'))
     df = pd.concat(df)
-   
-    groupby = ['experiment', 'plate', 'passage']
+
+    if not options.mic:
+        groupby = ['experiment', 'plate', 'passage']
+    else:
+        groupby = ['experiment', 'plate', 'passage', 'date']
 
     df.groupby(groupby).apply(plot,
                               outdir=options.output,
