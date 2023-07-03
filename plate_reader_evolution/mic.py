@@ -48,6 +48,7 @@ def compute_mic(values, threshold=0.3, normalise=None):
         else:
             ymin = np.mean(ymin)
             y = (y - ymin) / (ymax - ymin)
+    values['normalized'] = y
     if v is None:
         # tentative MIC value
         v = values[y < threshold]['concentration']
@@ -58,7 +59,16 @@ def compute_mic(values, threshold=0.3, normalise=None):
     # check that there are no values above threshold with higher conc.
     w = values[y >= threshold]['concentration'].max()
     if w > v:
-        return np.nan
+        # tolerate up to 1
+        # wells below the threshold to call the cMIC
+        values = values.sort_values('concentration')
+        if values[(values['concentration'] < w) &
+                  (values['normalized'] < threshold)].groupby('concentration').count().shape[0] < 2:
+            v = values[(values['concentration'] > w) &
+                       (values['normalized'] < threshold)]['concentration'].min()
+        else:
+            v = np.nan
+        return v
     return v
 
 
