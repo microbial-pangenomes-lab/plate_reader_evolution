@@ -38,12 +38,6 @@ def make_transfer(protocol):
 
     # load labware and pipette arms
 
-    # right: p20 single
-
-    # 1, 2, 7, 8: p20 tips
-    # 4. 384 well plate (source)
-    # 5. 384 deep-well plate (target)
-
     # tips
     tips = []
     for position in (10,):
