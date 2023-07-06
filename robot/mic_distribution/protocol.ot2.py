@@ -47,9 +47,10 @@ def make_transfer(protocol):
     # pipette arms
     # 1 - 20 uL
     pipette = protocol.load_instrument('p20_multi_gen2', 'right', tip_racks=tips)
+    pipette.flow_rate.dispense = pipette.flow_rate.dispense / 2
 
     # source plate
-    # s_plate = protocol.load_labware('corning_384_wellplate_112ul_flat', 7)
+    #s_plate = protocol.load_labware('corning_384_wellplate_112ul_flat', 7)
     s_plate = protocol.load_labware('corning_384_wellplate_240ul', 7)
 
     # destination plates
