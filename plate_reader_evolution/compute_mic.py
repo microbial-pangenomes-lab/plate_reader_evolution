@@ -65,6 +65,13 @@ def get_options():
                              'minimum '
                              '(default: %(default).2f)')
     
+    parser.add_argument('--stacked',
+                        default=False,
+                        action='store_true',
+                        help='MIC assay is in 3D, '
+                             'meaning it is "stacked" '
+                             '(default: each replicate is in its own plate)')
+
     parser.add_argument('--plot',
                         default=False,
                         action='store_true',
@@ -110,7 +117,11 @@ def main():
         df.append(pd.read_csv(filename, sep='\t'))
     df = pd.concat(df)
    
-    groupby = ['experiment', 'plate', 'strain', 'treatment', 'passage', 'date']
+    if not options.stacked:
+        groupby = ['experiment', 'plate', 'strain', 'treatment', 'passage', 'date']
+    else:
+        groupby = ['experiment', 'strain', 'treatment', 'passage', 'date']
+        print(groupby)
 
     # compute MICs
     logger.info('computing MICs (curve fitting)')

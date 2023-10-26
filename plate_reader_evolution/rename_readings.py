@@ -11,7 +11,6 @@ import pandas as pd
 import logging.handlers
 
 from .__init__ import __version__
-from .parse import parse_plate_design, parse_excel
 from .colorlog import ColorFormatter
 
 
@@ -108,7 +107,7 @@ def main():
                 continue
             name, plate, etype, exp = c.loc[number, ['name', 'plate', 'type', 'exp']].values
             outfolder = f'{exp}_renamed_{etype}_xxx'
-            fname = f'{plate}_{date}-{number}_{passage}.{extension}'
+            fname = f'{plate}_{date}-{name}_{passage}.{extension}'
 
             orig = os.path.join(folder, f, i)
             dest = os.path.join(output, outfolder, fname)
