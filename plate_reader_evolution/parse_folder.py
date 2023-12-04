@@ -136,14 +136,14 @@ def main():
         try:
             m = parse_excel(os.path.join(folder, infile), p384=options.p384)
         except:
-            if options.p384:
+            try:
+                # probably a time series, try the alternative approach
+                logger.debug(f'could not parse {infile} from {folder} '
+                             'trying to see if it is a timeseries')
+                m = parse_excel_time_series(os.path.join(folder, infile))
+            except:
                 logger.error(f'could not parse {infile} from {folder}')
                 sys.exit(1)
-
-            # probably a time series, try the alternative approach
-            logger.debug(f'could not parse {infile} from {folder} '
-                         'trying to see if it is a timeseries')
-            m = parse_excel_time_series(os.path.join(folder, infile))
 
         if plate not in d[exp]:
             logger.warning(f'plate {plate} from {exp} not in the design table')

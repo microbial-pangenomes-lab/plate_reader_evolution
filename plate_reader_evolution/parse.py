@@ -38,6 +38,11 @@ def parse_excel(infile, p384=False):
         repeats = n_values // 16
         rest = n_values % 16
 
+        # if we have spare change must assume something is not right
+        if rest != 0:
+            raise ValueError(f'Could not parse {infile}; found {n_values} '
+                              'measurements, not a multiple of 16')
+
     logger.debug(f'Found {repeats} from {infile}')
 
     # get the meat of the spreadsheet
