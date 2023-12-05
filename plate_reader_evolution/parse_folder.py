@@ -135,14 +135,16 @@ def main():
 
         try:
             m = parse_excel(os.path.join(folder, infile), p384=options.p384)
-        except:
+        except Exception as e:
+            # probably a time series, try the alternative approach
+            logger.debug(f'could not parse {infile} from {folder} '
+                         'trying to see if it is a timeseries')
+            logger.debug(f'error: {e}')
             try:
-                # probably a time series, try the alternative approach
-                logger.debug(f'could not parse {infile} from {folder} '
-                             'trying to see if it is a timeseries')
                 m = parse_excel_time_series(os.path.join(folder, infile))
-            except:
+            except Exception as e:
                 logger.error(f'could not parse {infile} from {folder}')
+                logger.debug(f'error: {e}')
                 sys.exit(1)
 
         if plate not in d[exp]:
