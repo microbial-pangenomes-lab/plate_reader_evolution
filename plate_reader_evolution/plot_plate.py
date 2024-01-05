@@ -50,6 +50,11 @@ def get_options():
                         help='Experiment is done on 384 plates (default: 96 wells, '
                              'would not work with time series data)')
 
+    parser.add_argument('--date-is-replicate',
+                        action='store_true',
+                        default=False,
+                        help='The "date" field indicates the replicate identifier')
+
     parser.add_argument('--mic',
                         action='store_true',
                         default=False,
@@ -93,7 +98,7 @@ def main():
         df.append(pd.read_csv(filename, sep='\t'))
     df = pd.concat(df)
 
-    if not options.mic:
+    if not options.mic or options.date_is_replicate:
         groupby = ['experiment', 'plate', 'passage']
     else:
         groupby = ['experiment', 'plate', 'passage', 'date']
