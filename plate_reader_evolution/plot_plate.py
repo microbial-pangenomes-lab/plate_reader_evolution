@@ -98,7 +98,9 @@ def main():
         df.append(pd.read_csv(filename, sep='\t'))
     df = pd.concat(df)
 
-    if not options.mic or options.date_is_replicate:
+    if options.date_is_replicate:
+        groupby = ['experiment', 'plate', 'passage', 'date']
+    elif not options.mic:
         groupby = ['experiment', 'plate', 'passage']
     else:
         groupby = ['experiment', 'plate', 'passage', 'date']
