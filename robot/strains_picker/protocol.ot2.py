@@ -19,11 +19,12 @@ P20_SOURCE_CLEARANCE = 3
 # if using a p20 dropping a small volume into 1.5mL, then use 10 mm
 P20_DESTINATION_CLEARANCE = 10
 # NOTE: injected data file
-# should be a csv file with no header and 4 fields
-# 1. source row (A to H)
-# 2. source column (1 to 12)
-# 3. destination row (A to H)
-# 4. destination column (1 to 12)
+# should be a csv file with no header and 5 fields
+# 1. source plate (position in OT-2 deck, so 1 to 11)
+# 2. source row (A to H)
+# 3. source column (1 to 12)
+# 4. destination row (A to H)
+# 5. destination column (1 to 12)
 ###############################################################################
 
 
@@ -46,13 +47,15 @@ def read_transfers(protocol):
 
     for csv_row in DATA:
         csv_row = csv_row.rstrip().split('\t')
-        s_row, s_column, d_row, d_column = csv_row[:4]
+        s_location, s_row, s_column, d_row, d_column = csv_row[:5]
+        s_location = int(s_location)
         s_column = int(s_column)
         d_column = int(d_column)
         s_well = f'{s_row}{s_column}'
         d_well = f'{d_row}{d_column}'
 
-        transfers[s_well] = d_well
+        transfers[s_location] = transfers.get(s_location, {})
+        transfers[s_location][s_well] = d_well
 
     protocol.comment(f'Will perfom {len(transfers)} tranfers')
     return transfers
@@ -68,13 +71,13 @@ def make_transfer(protocol):
 
     # right: p20 single
 
-    # 1, 2, 7, 8: p20 tips
-    # 4. 384 well plate (source)
-    # 5. 384 deep-well plate (target)
+    # 1, 2, 3, 10: p20 tips
+    # 4 to 9. 384 well plates (sources)
+    # 11. 384 deep-well plate (target)
 
     # tips
     tips = []
-    for position in (1, 2, 7, 8):
+    for position in (1, 2, 3, 10):
         tip = protocol.load_labware('opentrons_96_tiprack_20ul', position)
         tips.append(tip)
 
@@ -82,23 +85,28 @@ def make_transfer(protocol):
     # 1 - 20 uL
     pipette = protocol.load_instrument('p20_single_gen2', 'right', tip_racks=tips)
 
-    # source plate
-    s_plate = protocol.load_labware('corning_384_wellplate_112ul_flat', 4)
+    # source plate(s)
+    d_s_plates = {}
+    for s_location in transfers:
+        s_plate = protocol.load_labware('corning_384_wellplate_112ul_flat', s_location)
+        d_s_plates[s_location] = s_plate
 
     # destination plate
-    d_plate = protocol.load_labware('corning_384_wellplate_240ul', 5)
+    d_plate = protocol.load_labware('corning_384_wellplate_240ul', 11)
 
     pipette.well_bottom_clearance.aspirate = P20_SOURCE_CLEARANCE
     pipette.well_bottom_clearance.dispense = P20_DESTINATION_CLEARANCE
 
     # do the actual transfers
-    for s_well, d_well in transfers.items():
-        pipette.transfer(TRANSFER_VOLUME,
-                         s_plate[s_well],
-                         d_plate[d_well],
-                         blow_out=True,
-                         blowout_location='trash',
-                         disposal_volume=5)
+    for s_location in transfers:
+        s_plate = d_s_plates[s_location]
+        for s_well, d_well in transfers[s_location].items():
+            pipette.transfer(TRANSFER_VOLUME,
+                             s_plate[s_well],
+                             d_plate[d_well],
+                             blow_out=True,
+                             blowout_location='trash',
+                            disposal_volume=5)
 
     if pipette.has_tip:
         pipette.drop_tip()

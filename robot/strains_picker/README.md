@@ -8,7 +8,8 @@ Usage
 -----
 
 Edit `data/my_samples.tsv`
-with the desired row/column list.
+with the desired source plate/row/column list. The first column indicates the position of the source
+plate in the OT-2 deck.
 
 Edit any parameters (such as transfer volume and source/destination existing volumes) at the
 top of the `protocol.ot2.py` file and save the changes. Do not change
