@@ -144,7 +144,7 @@ def plot_plate(df, fname, fig=None, name='', p384=False):
     plt.clf()
 
 
-def plot_mic(df, params, fname, normalise=None, fig=None, name=''):
+def plot_mic(df, params, fname, normalise=None, fig=None, name='', threshold=0.3):
     if fig is None:
         fig = create_figure()
     else:
@@ -173,6 +173,22 @@ def plot_mic(df, params, fname, normalise=None, fig=None, name=''):
                     y2,
                     'g.',
                     label='normalised data (cMIC)')
+        # repeat cMIC plot but with mean OD
+        tmp = df[['concentration', 'od600']].groupby('concentration').mean()
+        x = tmp.reset_index()['concentration']
+        y = tmp['od600']
+        ymin = y[y <= normalise]
+        if y.max() > 0.5:
+            ymax = np.mean(y[y > 0.5])
+        else:
+            ymax = y.max()
+        if ymin.shape[0] != 0:
+            ymin = np.median(ymin)
+            y2 = (y - ymin) / (ymax - ymin)
+            plt.plot(x,
+                    y2,
+                    '.', color='purple',
+                    label='normalised average data (cMIC)')
     a, b, c, d, mic, cmic = params
     if not np.isnan(a):
         x = np.linspace(df[df['concentration'] != 0]['concentration'].min(),
@@ -200,6 +216,10 @@ def plot_mic(df, params, fname, normalise=None, fig=None, name=''):
                 color='xkcd:dark red',
                     ls='dashed',
                     label='cMIC')
+    plt.axhline(threshold,
+            color='xkcd:grey',
+                ls='dashed',
+                label='OD threshold')
 
     plt.legend(loc='best', facecolor='w', prop={'size': 6})
 

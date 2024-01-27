@@ -30,8 +30,14 @@ def compute_mic(values, threshold=0.3, normalise=None):
         mic (float)
             MIC estimate
     """
+    values = values[['od600', 'concentration']
+            ].groupby('concentration').mean().reset_index()
     y = values['od600']
     v = None
+    # if no raw OD value is above the initial threshold
+    # assume no growth at all concentration
+    if y[y > threshold].shape[0] == 0:
+        return values['concentration'].min()
     if normalise is not None:
         # robust normalisation
         # use an average of all OD values
@@ -67,8 +73,11 @@ def compute_mic(values, threshold=0.3, normalise=None):
             v = values[(values['concentration'] > w) &
                        (values['normalized'] < threshold)]['concentration'].min()
         else:
-            v = np.nan
-        return v
+            # if the higher point is a single one, assume it's a spurious plate reader misreading
+            # if more than one we are officially confused and refuse to give a cMIC
+            if values[(values['concentration'] > v) &
+                      (values['normalized'] >= threshold)].groupby('concentration').count().shape[0] > 1:
+                v = np.nan
     return v
 
 

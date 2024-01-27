@@ -72,6 +72,12 @@ def get_options():
                              'meaning it is "stacked" '
                              '(default: each replicate is in its own plate)')
 
+    parser.add_argument('--skip-fitting',
+                        default=False,
+                        action='store_true',
+                        help='Skip curve fitting, only compute cMIC '
+                             '(default: also compute "regular" MIC and IC50)')
+
     parser.add_argument('--plot',
                         default=False,
                         action='store_true',
@@ -81,7 +87,8 @@ def get_options():
                         choices=('png',
                                  'tiff',
                                  'pdf',
-                                 'svg'),
+                                 'svg',
+                                 'jpg'),
                         default='png',
                         help='Output format for plots (default: %(default)s)') 
     parser.add_argument('--plots-output',
@@ -97,13 +104,15 @@ def get_options():
     return parser.parse_args()
 
 
-def plot(v, params, outdir, fmt, fig, normalise):
+def plot(v, params, outdir, fmt, fig, normalise, threshold):
     name = '_'.join([str(x) for x in v.name])
     fname = os.path.join(outdir, f'{name}.{fmt}')
     logger.info(f'plotting MIC {name}')
     logger.debug(f'creating file {fname}')
     p = params.loc[tuple(v.name), ['a', 'b', 'c', 'd', 'mic', 'cmic']]
-    plot_mic(v, p, fname, normalise=normalise, fig=fig, name=name)
+    plot_mic(v, p, fname, normalise=normalise,
+             threshold=threshold,
+             fig=fig, name=name)
 
 
 def main():
@@ -121,15 +130,15 @@ def main():
         groupby = ['experiment', 'plate', 'strain', 'treatment', 'passage', 'date']
     else:
         groupby = ['experiment', 'strain', 'treatment', 'passage', 'date']
-        print(groupby)
 
-    # compute MICs
-    logger.info('computing MICs (curve fitting)')
-    mic = df.groupby(groupby).apply(fit_gompertz,
-                                    estimate=True,
-                                    sanity=options.minimum_od,
-                                    normalise=options.minimum_od,
-                                    )['mic'].to_frame()
+    if not options.skip_fitting:
+        # compute MICs
+        logger.info('computing MICs (curve fitting)')
+        mic = df.groupby(groupby).apply(fit_gompertz,
+                                        estimate=True,
+                                        sanity=options.minimum_od,
+                                        normalise=options.minimum_od,
+                                        )['mic'].to_frame()
     # compute MICs (classical "eyeballing" method)
     logger.info('computing MICs (eyeballing)')
     cmic = df.groupby(groupby).apply(compute_mic,
@@ -138,13 +147,19 @@ def main():
                                      )
     cmic.name = 'cmic'
     cmic = cmic.to_frame()
-    # fit hill function (IC50)
-    logger.info('computing IC50s')
-    params = df.groupby(groupby).apply(fit_hill,
-                                       estimate=True,
-                                       sanity=options.minimum_od,
-                                       normalise=options.minimum_od)
-    params = params.join(mic.join(cmic, how='outer'), how='outer')
+    if not options.skip_fitting:
+        # fit hill function (IC50)
+        logger.info('computing IC50s')
+        params = df.groupby(groupby).apply(fit_hill,
+                                           estimate=True,
+                                           sanity=options.minimum_od,
+                                               normalise=options.minimum_od)
+        params = params.join(mic.join(cmic, how='outer'), how='outer')
+    else:
+        params = cmic
+        for x in ['a', 'b', 'c', 'd', 'mic']:
+            params[x] = np.nan
+
     params.to_csv(options.output,
                   sep='\t')
 
@@ -154,6 +169,7 @@ def main():
         df.groupby(groupby).apply(plot,
                                   params=params,
                                   normalise=options.minimum_od,
+                                  threshold=options.od_threshold,
                                   outdir=options.plots_output,
                                   fmt=options.format,
                                   fig=fig)
