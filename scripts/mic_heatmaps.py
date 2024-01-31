@@ -65,6 +65,12 @@ def get_options():
                              'minimum '
                              '(default: %(default).2f)')
 
+    parser.add_argument('--digits',
+                        type=int,
+                        default=3,
+                        help='Significant digits to report for concentration '
+                             '(default: %(default)d)')
+
     parser.add_argument('--format',
                         choices=('png',
                                  'tiff',
@@ -87,7 +93,7 @@ def normalize(values, normalise=0.3, threshold=0.2):
     y = values['od600']
     if y[y > threshold].shape[0] == 0:
         y = pd.Series([0] * y.shape[0],
-                      index=[float('%.3f' % x) for x in values['concentration'].values])
+                      index=values['concentration'].values)
         return y
     ymin = y[y <= normalise]
     # also remove artifacts from very high
@@ -101,7 +107,7 @@ def normalize(values, normalise=0.3, threshold=0.2):
     else:
         ymin = np.mean(ymin)
         y = (y - ymin) / (ymax - ymin)
-    y.index = [float('%.3f' % x) for x in values['concentration'].values]
+    y.index = values['concentration'].values
     return y
 
 
@@ -139,10 +145,10 @@ if __name__ == "__main__":
 
     logger.info('Preparing raw OD matrix')
 
+    df['concentration'] = [float(f'%.{options.digits}f' % x) for x in df['concentration']]
     m = df.pivot_table(index=['strain', 'replicate'],
                        columns='concentration',
                        values='od600')
-    m.columns = [float('%.3f' % x) for x in m.columns]
 
     logger.info('Normalizing OD')
 
@@ -155,7 +161,7 @@ if __name__ == "__main__":
     cmap = plt.get_cmap('viridis').copy()
     cmap.set_under('xkcd:light grey')
 
-    fig, axes = plt.subplots(2, 1, figsize=(10, 4.5), constrained_layout=True)
+    fig, axes = plt.subplots(2, 1, figsize=(10, 5), constrained_layout=True)
     for strain in sorted(df['strain'].dropna().unique()):
         fname = os.path.join(output, f'{strain}.{options.format}')
 
@@ -176,7 +182,7 @@ if __name__ == "__main__":
             cmic = c.loc[strain][rep]
             if np.isnan(cmic):
                 continue
-            hm.plot(list(n.columns).index(float('%.3f' % cmic)) + 0.5,
+            hm.plot(list(n.columns).index(float(f'%.{options.digits}f' % cmic)) + 0.5,
                     list(n.loc[strain].index).index(rep) + 0.5,
                     'ro', markersize=4.5)
 
@@ -197,7 +203,7 @@ if __name__ == "__main__":
             cmic = c.loc[strain][rep]
             if np.isnan(cmic):
                 continue
-            hm.plot(list(n.columns).index(float('%.3f' % cmic)) + 0.5,
+            hm.plot(list(n.columns).index(float(f'%.{options.digits}f' % cmic)) + 0.5,
                     list(n.loc[strain].index).index(rep) + 0.5,
                     'ro', markersize=4.5)
 
