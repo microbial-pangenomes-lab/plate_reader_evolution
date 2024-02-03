@@ -21,9 +21,6 @@ sns.set_context('paper')
 rcParams['font.family'] = 'sans-serif'
 
 
-from plate_reader_evolution.colorlog import ColorFormatter
-
-
 logger = logging.getLogger('evol')
 
 
@@ -36,8 +33,6 @@ def set_logging(v):
         ch.setLevel(logging.INFO)
     elif v >= 1:
         ch.setLevel(logging.DEBUG)
-    formatter = ColorFormatter('%(asctime)s - %(name)s - $COLOR%(message)s$RESET','%H:%M:%S')
-    ch.setFormatter(formatter)
     logger.addHandler(ch)
 
 
