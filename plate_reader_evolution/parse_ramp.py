@@ -131,6 +131,10 @@ def main():
     logger.info(f'reading plate design from {design}')
 
     de = parse_ramp_design(design, treatment, prefix=options.prefix)
+    if de is None:
+        logger.error(f'could not find any design with the desired {treatment} '
+                     f'column in the plate design file {design}')
+        sys.exit(1)
     ded = []
     ds = {}
     if shuffle is not None:

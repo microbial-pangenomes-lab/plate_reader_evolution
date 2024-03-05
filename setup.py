@@ -48,6 +48,7 @@ setup(
     entry_points={
         "console_scripts": [
             'pre-parse-folder = plate_reader_evolution.parse_folder:main',
+            'pre-parse-ramp = plate_reader_evolution.parse_ramp:main',
             'pre-compute-mic = plate_reader_evolution.compute_mic:main',
             'pre-compute-grate = plate_reader_evolution.compute_grate:main',
             'pre-plot-evol = plate_reader_evolution.plot_evol:main',
