@@ -117,8 +117,8 @@ if __name__ == "__main__":
     logger.info(f'reading raw OD from {raw}')
 
     df = pd.read_csv(raw, sep='\t')
-    df['strain'] = [f'NT{int(x)}' if str(x) != 'nan'
-                    else np.nan
+    df['strain'] = [f'NT{int(x)}' if str(x) != 'nan' and not x.startswith('NT')
+                    else x
                     for x in df['strain'].values]
 
     reps = {}
@@ -130,8 +130,8 @@ if __name__ == "__main__":
     logger.info(f'reading compute MIC values from {mic}')
 
     c = pd.read_csv(mic, sep='\t')
-    c['strain'] = [f'NT{int(x)}' if str(x) != 'nan'
-                   else np.nan
+    c['strain'] = [f'NT{int(x)}' if str(x) != 'nan' and not x.startswith('NT')
+                   else x
                    for x in c['strain'].values]
 
 

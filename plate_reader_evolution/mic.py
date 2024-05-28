@@ -186,6 +186,11 @@ def fit_hill(v, estimate=True, sanity=None, normalise=None, maxfev=999999):
         return pd.Series([np.nan, np.nan, np.nan, np.nan,
                           np.nan, np.nan, np.nan, np.nan],
                          index=index)
+    except ValueError as e:
+        logger.warning(str(e))
+        return pd.Series([np.nan, np.nan, np.nan, np.nan,
+                          np.nan, np.nan, np.nan, np.nan],
+                         index=index)
 
 
 def mod_gompertz(x, A, B, C, M):
