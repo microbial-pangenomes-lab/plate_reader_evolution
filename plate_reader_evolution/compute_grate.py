@@ -56,6 +56,12 @@ def get_options():
                         default=60,
                         help='Time window to use '
                              '(minutes, default: %(default)d)')
+    parser.add_argument('--top-mu',
+                        type=int,
+                        default=4,
+                        help='How many growth rate estimates '
+                             'to keep to compute the average '
+                             '(default: the top %(default)d estimates)')
 
     parser.add_argument('--plot',
                         default=False,
@@ -110,7 +116,7 @@ def main():
     df['time'] = df['time'] / 60 / 60
     # create a timedelta index
     # allows for rolling windows
-    df.index = pd.to_timedelta(df['time'], unit='H')
+    df.index = pd.to_timedelta(df['time'], unit='h')
 
     # take the natual log of OD600
     df['ln(od)'] = np.log(df['od600'])
@@ -126,7 +132,7 @@ def main():
 	# calculate growth rate
     mu = df.groupby(groupby
                    ).apply(calc_growth_rate,
-                           time=f'{options.window}T').T
+                           time=f'{options.window}min').T
     # keep a copy of mu across all
     # windows for plotting
     mu_all = mu.copy()
@@ -134,7 +140,8 @@ def main():
     mu_all.name = 'grate'
     mu_all = mu_all.reset_index()
     #
-    mu = mu.max()
+    # mu = mu.max()
+    mu = mu.apply(lambda x: x.dropna().sort_values().tail(options.top_mu).mean())
     mu.name = 'grate'
     mu = mu.reset_index()
 

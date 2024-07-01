@@ -9,7 +9,7 @@ from scipy import stats
 logger = logging.getLogger('evol.grate')
 
 
-def calc_growth_rate(v, time='60T'):
+def calc_growth_rate(v, time='60min'):
     def rolling_fit(x):
         t = v.loc[x.index]
         return stats.linregress(t['time'], t['ln(od)']).slope
