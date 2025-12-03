@@ -1,0 +1,218 @@
+{
+    "ordering": [
+        [
+            "A1"
+        ],
+        [
+            "A2"
+        ],
+        [
+            "A3"
+        ],
+        [
+            "A4"
+        ],
+        [
+            "A5"
+        ],
+        [
+            "A6"
+        ],
+        [
+            "A7"
+        ],
+        [
+            "A8"
+        ],
+        [
+            "A9"
+        ],
+        [
+            "A10"
+        ],
+        [
+            "A11"
+        ],
+        [
+            "A12"
+        ]
+    ],
+    "brand": {
+        "brand": "Marco life sciences12x6ml",
+        "brandId": [
+            "d"
+        ]
+    },
+    "metadata": {
+        "displayName": "Marco Life Sciences12x6ml 12 Reservoir 6000 µL",
+        "displayCategory": "reservoir",
+        "displayVolumeUnits": "µL",
+        "tags": []
+    },
+    "dimensions": {
+        "xDimension": 127.7,
+        "yDimension": 85.47,
+        "zDimension": 19.18
+    },
+    "wells": {
+        "A1": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 14.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A2": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 23.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A3": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 32.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A4": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 41.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A5": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 50.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A6": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 59.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A7": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 68.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A8": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 77.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A9": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 86.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A10": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 95.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A11": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 104.24,
+            "y": 44,
+            "z": 6.18
+        },
+        "A12": {
+            "depth": 13,
+            "totalLiquidVolume": 6000,
+            "shape": "rectangular",
+            "xDimension": 7.8,
+            "yDimension": 70.23,
+            "x": 113.24,
+            "y": 44,
+            "z": 6.18
+        }
+    },
+    "groups": [
+        {
+            "metadata": {
+                "wellBottomShape": "v"
+            },
+            "wells": [
+                "A1",
+                "A2",
+                "A3",
+                "A4",
+                "A5",
+                "A6",
+                "A7",
+                "A8",
+                "A9",
+                "A10",
+                "A11",
+                "A12"
+            ]
+        }
+    ],
+    "parameters": {
+        "format": "irregular",
+        "quirks": [
+            "centerMultichannelOnWells",
+            "touchTipDisabled"
+        ],
+        "isTiprack": false,
+        "isMagneticModuleCompatible": false,
+        "loadName": "marcolifesciences12x6ml_12_reservoir_6000ul"
+    },
+    "namespace": "custom_beta",
+    "version": 1,
+    "schemaVersion": 2,
+    "cornerOffsetFromSlot": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+    }
+}
