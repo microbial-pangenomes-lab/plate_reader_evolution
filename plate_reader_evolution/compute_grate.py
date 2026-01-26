@@ -162,6 +162,10 @@ def main():
         logger.warning(f'could not compute delta growth rate ({str(e)}), skipping')
         delta = None
 
+    if delta['delta'].isnull().all():
+        logger.warning('all delta growth rates are NaN, skipping delta output')
+        delta = None
+
     # write output
     if delta is not None:
         mu = mu.set_index(groupby).join(
