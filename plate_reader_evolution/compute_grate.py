@@ -51,6 +51,12 @@ def get_options():
                         default=0.6,
                         help='Maximum OD600 to consider '
                              '(default: %(default).2f)')
+    parser.add_argument('--minimum-time',
+                        type=float,
+                        default=0,
+                        help='Ignore OD measurements taken before '
+                             'this time '
+                             '(hours, default: %(default).2f)')
     parser.add_argument('--window',
                         type=int,
                         default=60,
@@ -114,6 +120,8 @@ def main():
 
     # seconds to hours
     df['time'] = df['time'] / 60 / 60
+    # ignore measurements taken before the minimum time
+    df = df[df['time'] >= options.minimum_time]
     # create a timedelta index
     # allows for rolling windows
     df.index = pd.to_timedelta(df['time'], unit='h')
